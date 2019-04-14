@@ -1,7 +1,6 @@
 use serialport::prelude::*;
 use postcard::from_bytes;
 use nrf52_bin_logger::LogOnLine;
-use cobs::decode_vec;
 use protocol::{ModemUartMessages, CellCommand};
 use std::sync::mpsc::Sender;
 
@@ -12,7 +11,7 @@ struct Modem {
 }
 
 impl Modem {
-    fn process_serial(&mut self) -> Result<Vec<ModemUartMessages>, ()> {
+    fn process_serial(&mut self) -> Result<Vec<CellCommand>, ()> {
         let mut buf = [0u8; 1024];
         let buf = match self.port.read(&mut buf) {
             Ok(ct) => &buf[..ct],
@@ -26,7 +25,7 @@ impl Modem {
         self.push_bytes(buf)
     }
 
-    fn push_bytes(&mut self, mut data: &[u8]) -> Result<Vec<ModemUartMessages>, ()> {
+    fn push_bytes(&mut self, mut data: &[u8]) -> Result<Vec<CellCommand>, ()> {
         let mut resps = vec![];
 
         while let Some(idx) = data.iter().position(|&b| b == 0) {
@@ -34,9 +33,10 @@ impl Modem {
             self.cobs_buf.extend_from_slice(end);
 
             use LogOnLine::*;
+            use ModemUartMessages::*;
             if let Ok(idx) = cobs::decode_in_place(&mut self.cobs_buf) {
                 match from_bytes::<LogOnLine<ModemUartMessages>>(&self.cobs_buf[..idx]) {
-                    Ok(ProtocolMessage(desmsg)) =>  {
+                    Ok(ProtocolMessage(SetCell(desmsg))) =>  {
                         resps.push(desmsg);
                     }
                     Ok(other) => display(&other),
@@ -56,7 +56,7 @@ impl Modem {
     }
 }
 
-pub fn modem_task(port: Box<dyn SerialPort>, _prod_cmds: Sender<CellCommand>) -> Result<(), ()> {
+pub fn modem_task(port: Box<dyn SerialPort>, prod_cmds: Sender<CellCommand>) -> Result<(), ()> {
     println!("Receiving data on {} at {} baud:", "/dev/ttyACM0", "115200");
 
     let mut modem = Modem {
@@ -65,7 +65,11 @@ pub fn modem_task(port: Box<dyn SerialPort>, _prod_cmds: Sender<CellCommand>) ->
     };
 
     loop {
-        let _msgs = modem.process_serial();
+        modem.process_serial()?
+            .drain(..)
+            .try_for_each(|m| {
+                prod_cmds.send(m).map_err(|_| ())
+            })?;
     }
 }
 

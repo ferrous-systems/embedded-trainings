@@ -16,16 +16,16 @@ pub enum ModemUartMessages {
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct Cell {
-    row: i32,
-    column: i32,
-    red: u8,
-    green: u8,
-    blue: u8,
+    pub row: i32,
+    pub column: i32,
+    pub red: u8,
+    pub green: u8,
+    pub blue: u8,
 }
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct CellCommand {
-    source: u16,
-    dest: u16,
-    cell: Cell,
+    pub source: u16,
+    pub dest: u16,
+    pub cell: Cell,
 }

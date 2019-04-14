@@ -32,7 +32,7 @@ use rtfm::app;
 use panic_ramdump as _;
 
 // Workspace dependencies
-use protocol::{ModemUartMessages};
+use protocol::{ModemUartMessages, CellCommand, Cell};
 use nrf52_bin_logger::Logger;
 
 
@@ -98,8 +98,22 @@ const APP: () = {
             // write!(&mut out, "large  {:016X}\r\n", 30).unwrap();
             // write!(&mut out, "text: {}\r\n", "Hi there!").unwrap();
             // resources.LOGGER.log(out.as_str()).unwrap();
-            resources.LOGGER.log("hello!").unwrap();
-            delay(resources.TIMER, 1_000_000);
+            let cmd = CellCommand {
+                source: 0,
+                dest: 0,
+                cell: Cell {
+                    row: ((resources.RANDOM.random_u8() % 16) + 1) as i32,
+                    column: ((resources.RANDOM.random_u8() % 16) + 1) as i32,
+                    red: resources.RANDOM.random_u8(),
+                    green: resources.RANDOM.random_u8(),
+                    blue: resources.RANDOM.random_u8(),
+                },
+            };
+            // resources.LOGGER.log("hello!").unwrap();
+            // delay(resources.TIMER, 500_000);
+
+            resources.LOGGER.data(ModemUartMessages::SetCell(cmd)).unwrap();
+            // delay(resources.TIMER, 16_666);
         }
     }
 };
