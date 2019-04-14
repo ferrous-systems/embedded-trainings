@@ -20,7 +20,7 @@ mod board_mgr;
 #[derive(Deserialize, Debug)]
 struct Config {
     serial: SerialConfig,
-    squares: SquaresConfig,
+    squares: board_mgr::SquaresConfig,
     board: board_mgr::BoardManagerConfig,
 }
 
@@ -29,12 +29,6 @@ struct SerialConfig {
     timeout_ms: u64,
     baudrate: u32,
     port: String,
-}
-
-#[derive(Deserialize, Debug)]
-struct SquaresConfig {
-    host: String,
-    port: u16,
 }
 
 fn main() {
@@ -55,11 +49,8 @@ fn main() {
 
     let modem_hdl = spawn(move || modem_task(port, prod_cmds));
     let board_hdl = spawn(move || board_mgr_task(
-        &format!(
-            "{}:{}",
-            config.squares.host,
-            config.squares.port
-        ),
+        &config.squares,
+        &config.board,
         cons_cmds
         )
     );

@@ -16,21 +16,12 @@ pub struct BoardManagerConfig {
     pub total_board: Segment,
 }
 
-impl Default for BoardManagerConfig {
-    fn default() -> Self {
-        let mut map = HashMap::new();
-        map.insert(0, Segment { x: 25..=32, y: 25..=32 });
-
-        Self {
-            clear_interval: Duration::from_secs(30),
-            partitions: Some(map),
-            total_board: Segment {
-                x: 1..=32,
-                y: 1..=32,
-            }
-        }
-    }
+#[derive(Deserialize, Debug)]
+pub struct SquaresConfig {
+    host: String,
+    port: u16,
 }
+
 
 #[derive(Deserialize, Debug)]
 pub struct Segment {
@@ -38,15 +29,14 @@ pub struct Segment {
     pub y: RangeInclusive<usize>,
 }
 
-pub fn board_mgr_task(host: &str, cons_cmds: Receiver<CellCommand>) -> Result<(), ()> {
+pub fn board_mgr_task(cfg_sq: &SquaresConfig, cfg_bd: &BoardManagerConfig, cons_cmds: Receiver<CellCommand>) -> Result<(), ()> {
     let client = reqwest::Client::new();
-    let cell_endpoint: &str = &format!("{}/cell", host);
+    let cell_endpoint: &str = &format!("{}:{}/cell", cfg_sq.host, cfg_sq.port);
     let mut last_start = Instant::now();
-    let config = BoardManagerConfig::default();
     let mut rng = rand::thread_rng();
 
     loop {
-        while last_start.elapsed() < config.clear_interval {
+        while last_start.elapsed() < cfg_bd.clear_interval {
             let msg = match cons_cmds.recv_timeout(Duration::from_millis(100)) {
                 Ok(msg) => Ok(msg),
                 Err(RecvTimeoutError::Timeout) => continue,
@@ -56,7 +46,7 @@ pub fn board_mgr_task(host: &str, cons_cmds: Receiver<CellCommand>) -> Result<()
                 }
             }?;
 
-            if let Ok((x, y)) = validate_and_remap(&config, &msg) {
+            if let Ok((x, y)) = validate_and_remap(&cfg_bd, &msg) {
                 let req = client
                     .post(cell_endpoint)
                     .json(&Cell {
@@ -81,8 +71,8 @@ pub fn board_mgr_task(host: &str, cons_cmds: Receiver<CellCommand>) -> Result<()
         let grn = rng.gen_range(0, u8::max_value() / 4);
         let blu = rng.gen_range(0, u8::max_value() / 4);
 
-        for x in config.total_board.x.clone().into_iter() {
-            for y in config.total_board.y.clone().into_iter() {
+        for x in cfg_bd.total_board.x.clone().into_iter() {
+            for y in cfg_bd.total_board.y.clone().into_iter() {
                 let req = client
                     .post(cell_endpoint)
                     .json(&Cell {

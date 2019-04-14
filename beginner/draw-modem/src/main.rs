@@ -19,6 +19,7 @@ use dwm1001::{
             TIMER0,
             SPIM2,
         },
+        uarte::Baudrate as UartBaudrate,
     },
     new_dw1000,
     new_usb_uarte,
@@ -53,11 +54,15 @@ const APP: () = {
     fn init() {
         let timer = device.TIMER0.constrain();
         let pins = device.P0.split();
+
+        let mut uc = UsbUarteConfig::default();
+        uc.baudrate = UartBaudrate::BAUD230400;
+
         let uarte0 = new_usb_uarte(
             device.UARTE0,
             pins.p0_05,
             pins.p0_11,
-            UsbUarteConfig::default(),
+            uc,
         );
 
         let rng = device.RNG.constrain();
@@ -91,29 +96,26 @@ const APP: () = {
     #[idle(resources = [TIMER, LED_RED_1, LOGGER, RANDOM, DW1000])]
     fn idle() -> ! {
         loop {
-            // let mut out: String<U256> = String::new();
-            // write!(&mut out, "got message! \r\n").unwrap();
-            // write!(&mut out, "small: {:016X}\r\n", 10).unwrap();
-            // write!(&mut out, "med:   {:016X}\r\n", 20).unwrap();
-            // write!(&mut out, "large  {:016X}\r\n", 30).unwrap();
-            // write!(&mut out, "text: {}\r\n", "Hi there!").unwrap();
-            // resources.LOGGER.log(out.as_str()).unwrap();
-            let cmd = CellCommand {
-                source: 0,
-                dest: 0,
-                cell: Cell {
-                    row: ((resources.RANDOM.random_u8() % 8) + 1) as usize,
-                    column: ((resources.RANDOM.random_u8() % 8) + 1) as usize,
-                    red: resources.RANDOM.random_u8(),
-                    green: resources.RANDOM.random_u8(),
-                    blue: resources.RANDOM.random_u8(),
-                },
-            };
-            // resources.LOGGER.log("hello!").unwrap();
-            // delay(resources.TIMER, 500_000);
+            let src = ((resources.RANDOM.random_u8() % 16) + 1) as u16;
 
-            resources.LOGGER.data(ModemUartMessages::SetCell(cmd)).unwrap();
-            // delay(resources.TIMER, 16_666);
+            for _ in 0..128 {
+
+                let cmd = CellCommand {
+                    source: src,
+                    dest: 0,
+                    cell: Cell {
+                        row: ((resources.RANDOM.random_u8() % 8) + 1) as usize,
+                        column: ((resources.RANDOM.random_u8() % 8) + 1) as usize,
+                        red: resources.RANDOM.random_u8(),
+                        green: resources.RANDOM.random_u8(),
+                        blue: resources.RANDOM.random_u8(),
+                    },
+                };
+
+                resources.LOGGER.data(ModemUartMessages::SetCell(cmd)).unwrap();
+            }
+            resources.TIMER.start(25_000u32);
+            while resources.TIMER.wait().is_err() {}
         }
     }
 };

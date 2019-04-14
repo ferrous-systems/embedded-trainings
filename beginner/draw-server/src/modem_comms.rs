@@ -7,6 +7,7 @@ use std::sync::mpsc::Sender;
 struct Modem {
     port: Box<dyn SerialPort>,
     cobs_buf: Vec<u8>,
+    since_last_err: usize,
 }
 
 impl Modem {
@@ -36,13 +37,21 @@ impl Modem {
             if let Ok(idx) = cobs::decode_in_place(&mut self.cobs_buf) {
                 match from_bytes::<LogOnLine<ModemUartMessages>>(&self.cobs_buf[..idx]) {
                     Ok(ProtocolMessage(SetCell(desmsg))) =>  {
+                        self.since_last_err += 1;
                         resps.push(desmsg);
                     }
-                    Ok(other) => display(&other),
+                    Ok(other) => {
+                        self.since_last_err += 1;
+                        display(&other)
+                    },
                     Err(e) => {
-                        eprintln!("bad_decode: {:?}", e);
+                        eprintln!("bad_decode: {:?}, since_last: {}", e, self.since_last_err);
+                        self.since_last_err = 0;
                     }
                 }
+            } else {
+                eprintln!("Bad Cobs, since_last: {}", self.since_last_err);
+                self.since_last_err = 0;
             }
 
             data = rest;
@@ -56,11 +65,12 @@ impl Modem {
 }
 
 pub fn modem_task(port: Box<dyn SerialPort>, prod_cmds: Sender<CellCommand>) -> Result<(), ()> {
-    println!("Receiving data on {} at {} baud:", "/dev/ttyACM0", "115200");
+    println!("Receiving data on {} at {} baud:", port.name().unwrap(), port.baud_rate().unwrap());
 
     let mut modem = Modem {
         port,
         cobs_buf: vec![],
+        since_last_err: 0,
     };
 
     loop {
