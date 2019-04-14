@@ -94,12 +94,24 @@ const APP: () = {
 
         rst_pin.reset_dw1000(&mut delay);
         let mut dw1000 = dw1000.init().unwrap();
-        dw1000.set_address(
-            Address {
-                pan_id:     MODEM_PAN,
-                short_addr: MODEM_ADDR,
+
+        let addr = Address {
+            pan_id:     MODEM_PAN,
+            short_addr: MODEM_ADDR,
+        };
+
+        // Wait for the radio to become ready
+        loop {
+            if dw1000.set_address(addr).is_err() {
+                continue;
             }
-        ).unwrap();
+
+            if let Ok(raddr) = dw1000.get_address() {
+                if addr == raddr {
+                    break;
+                }
+            }
+        }
 
         RANDOM = rng;
         DW_RST_PIN = rst_pin;
@@ -140,6 +152,7 @@ const APP: () = {
                 },
                 Err(TimeoutError::Timeout) => {
                     resources.LOGGER.log("RX Timeout").unwrap();
+                    // TODO: Rage on the
                     continue;
                 }
                 Err(TimeoutError::Other(error)) => {

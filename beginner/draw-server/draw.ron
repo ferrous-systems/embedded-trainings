@@ -10,7 +10,7 @@
     ),
     board: (
         clear_interval: (
-            secs: 10,
+            secs: 60,
             nanos: 0,
         ),
         partitions: Some({
