@@ -25,15 +25,26 @@ use dwm1001::{
     new_usb_uarte,
     UsbUarteConfig,
     DW_RST,
+    block_timeout,
+    dw1000::{
+        macros::TimeoutError,
+        mac::Address,
+        Message,
+    },
 };
 use heapless::{String, consts::*};
 use rtfm::app;
+use postcard::from_bytes;
 
 // NOTE: Panic Provider
 use panic_ramdump as _;
 
 // Workspace dependencies
-use protocol::{ModemUartMessages, CellCommand, Cell};
+use protocol::{
+    ModemUartMessages,
+    CellCommand,
+    RadioMessages,
+};
 use nrf52_bin_logger::Logger;
 
 
@@ -82,8 +93,13 @@ const APP: () = {
         let mut delay = Delay::new(core.SYST, clocks);
 
         rst_pin.reset_dw1000(&mut delay);
-
-        let dw1000 = dw1000.init().unwrap();
+        let mut dw1000 = dw1000.init().unwrap();
+        dw1000.set_address(
+            Address {
+                pan_id:     MODEM_PAN,
+                short_addr: MODEM_ADDR,
+            }
+        ).unwrap();
 
         RANDOM = rng;
         DW_RST_PIN = rst_pin;
@@ -95,30 +111,89 @@ const APP: () = {
 
     #[idle(resources = [TIMER, LED_RED_1, LOGGER, RANDOM, DW1000])]
     fn idle() -> ! {
+        let mut buffer = [0u8; 1024];
+        let mut strbuf: String<U1024> = String::new();
+
         loop {
-            let src = ((resources.RANDOM.random_u8() % 16) + 1) as u16;
+            let mut rx = if let Ok(rx) = resources.DW1000.receive() {
+                rx
+            } else {
+                resources.LOGGER.warn("Failed to start receive!").unwrap();
+                resources.TIMER.delay(250_000);
+                continue;
+            };
 
-            for _ in 0..128 {
+            resources.TIMER.start(1_000_000u32);
 
-                let cmd = CellCommand {
-                    source: src,
-                    dest: 0,
-                    cell: Cell {
-                        row: ((resources.RANDOM.random_u8() % 8) + 1) as usize,
-                        column: ((resources.RANDOM.random_u8() % 8) + 1) as usize,
-                        red: resources.RANDOM.random_u8(),
-                        green: resources.RANDOM.random_u8(),
-                        blue: resources.RANDOM.random_u8(),
-                    },
-                };
-
-                resources.LOGGER.data(ModemUartMessages::SetCell(cmd)).unwrap();
-            }
-            resources.TIMER.start(25_000u32);
-            while resources.TIMER.wait().is_err() {}
+            match block_timeout!(&mut *resources.TIMER, rx.wait(&mut buffer)) {
+                Ok(message) => {
+                    if let Ok(resp) = process_message(
+                        resources.LOGGER,
+                        &message
+                    ) {
+                        resources.LOGGER.data(resp).unwrap();
+                    } else {
+                        strbuf.clear();
+                        write!(&mut strbuf, "^ Bad message from src 0x{:04X}", message.frame.header.source.short_addr).unwrap();
+                        resources.LOGGER.warn(strbuf.as_str()).unwrap();
+                    }
+                },
+                Err(TimeoutError::Timeout) => {
+                    resources.LOGGER.log("RX Timeout").unwrap();
+                    continue;
+                }
+                Err(TimeoutError::Other(error)) => {
+                    strbuf.clear();
+                    write!(&mut strbuf, "RX: {:?}", error).unwrap();
+                    resources.LOGGER.error(strbuf.as_str()).unwrap();
+                    continue;
+                }
+            };
         }
     }
 };
+
+const MODEM_PAN: u16 = 0x0386;
+const MODEM_ADDR: u16 = 0x0808;
+const BROADCAST: u16 = 0xFFFF;
+
+fn process_message(logger: &mut Logger<U1024, ModemUartMessages>, msg: &Message) -> Result<ModemUartMessages, ()> {
+    if msg.frame.header.source.pan_id == BROADCAST {
+        logger.error("bad bdcst pan!").unwrap();
+        return Err(())
+    }
+
+    if msg.frame.header.source.short_addr == BROADCAST {
+        logger.error("bad bdcst addr!").unwrap();
+        return Err(())
+    }
+
+    if msg.frame.header.destination.pan_id != msg.frame.header.source.pan_id {
+        logger.error("mismatch pan!").unwrap();
+        return Err(())
+    }
+
+    if msg.frame.header.destination.short_addr != MODEM_ADDR {
+        logger.error("that ain't me").unwrap();
+        return Err(())
+    }
+
+    if let Ok(pmsg) = from_bytes::<RadioMessages>(msg.frame.payload) {
+        match pmsg {
+            RadioMessages::SetCell(sc) => {
+                return Ok(ModemUartMessages::SetCell(CellCommand {
+                    source: msg.frame.header.source.short_addr,
+                    dest: msg.frame.header.destination.short_addr,
+                    cell: sc
+                }));
+            }
+        }
+    } else {
+        logger.warn("Failed to decode!").unwrap();
+    }
+
+    Err(())
+}
 
 use nb::{
     block,

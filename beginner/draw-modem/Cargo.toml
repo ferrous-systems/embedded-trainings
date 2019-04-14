@@ -13,6 +13,7 @@ dw1000           = "0.1.0"
 embedded-hal     = "0.2.2"
 heapless         = "0.4.2"
 nrf52-bin-logger = "0.1.1"
+postcard = "0.3.2"
 
 [dependencies.ssmarshal]
 version       = "=1.0.0"

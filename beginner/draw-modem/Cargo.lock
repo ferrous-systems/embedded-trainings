@@ -24,6 +24,7 @@ dependencies = [
  "nrf52-bin-logger 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "nrf52832-pac 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "panic-ramdump 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "postcard 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "protocol 0.1.0",
  "ssmarshal 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -196,7 +197,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "heapless 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "nrf52832-hal 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "postcard 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "postcard 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.90 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -268,7 +269,7 @@ dependencies = [
 
 [[package]]
 name = "postcard"
-version = "0.3.1"
+version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "byteorder 1.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -476,7 +477,7 @@ dependencies = [
 "checksum owned-singleton 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "21aa378869c97c7db706a4c576cf0ce8258dc7e0e1ad25a97ee5aba1fd4eed83"
 "checksum owned-singleton-macros 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "8d5c2ac071b95017bf70a5b607037fb0ef4abfa663fdf6cac8fbf36af9756ee3"
 "checksum panic-ramdump 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "699e5f8c3ae987deb02e8fea0099145f944b0d94b19efaa72d2d81484c908e4e"
-"checksum postcard 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)" = "795766323dc8beabd139d8d991596e85f80a0a0d0f8c7c131d1578e818b108f9"
+"checksum postcard 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)" = "6273e29a04e467f6a575d7d7430811607efb9df02b456903cb0717df98104664"
 "checksum postcard-cobs 0.1.5-pre (registry+https://github.com/rust-lang/crates.io-index)" = "7c68cb38ed13fd7bc9dd5db8f165b7c8d9c1a315104083a2b10f11354c2af97f"
 "checksum proc-macro2 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)" = "1b06e2f335f48d24442b35a19df506a835fb3547bc3c06ef27340da9acf5cae7"
 "checksum proc-macro2 0.4.27 (registry+https://github.com/rust-lang/crates.io-index)" = "4d317f9caece796be1980837fd5cb3dfec5613ebdb04ad0956deea83ce168915"
