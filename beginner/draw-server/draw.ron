@@ -1,0 +1,39 @@
+(
+    serial: (
+        timeout_ms: 100,
+        baudrate: 115200,
+        port: "/dev/ttyACM0",
+    ),
+    squares: (
+        host: "http://localhost",
+        port: 8000,
+    ),
+    board: (
+        clear_interval: (
+            secs: 30,
+            nanos: 0,
+        ),
+        partitions: Some({
+            0: (
+                x: (
+                    start: 25,
+                    end: 32,
+                ),
+                y: (
+                    start: 25,
+                    end: 32,
+                ),
+            ),
+        }),
+        total_board: (
+            x: (
+                start: 1,
+                end: 32,
+            ),
+            y: (
+                start: 1,
+                end: 32,
+            ),
+        )
+    )
+)

@@ -7,7 +7,6 @@ use std::sync::mpsc::Sender;
 struct Modem {
     port: Box<dyn SerialPort>,
     cobs_buf: Vec<u8>,
-    // cobs_dec: CobsDecoder<'static>,
 }
 
 impl Modem {

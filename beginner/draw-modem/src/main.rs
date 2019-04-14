@@ -102,8 +102,8 @@ const APP: () = {
                 source: 0,
                 dest: 0,
                 cell: Cell {
-                    row: ((resources.RANDOM.random_u8() % 16) + 1) as i32,
-                    column: ((resources.RANDOM.random_u8() % 16) + 1) as i32,
+                    row: ((resources.RANDOM.random_u8() % 8) + 1) as usize,
+                    column: ((resources.RANDOM.random_u8() % 8) + 1) as usize,
                     red: resources.RANDOM.random_u8(),
                     green: resources.RANDOM.random_u8(),
                     blue: resources.RANDOM.random_u8(),

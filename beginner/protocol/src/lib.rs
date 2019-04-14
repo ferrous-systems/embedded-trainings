@@ -16,8 +16,8 @@ pub enum ModemUartMessages {
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct Cell {
-    pub row: i32,
-    pub column: i32,
+    pub row: usize,
+    pub column: usize,
     pub red: u8,
     pub green: u8,
     pub blue: u8,

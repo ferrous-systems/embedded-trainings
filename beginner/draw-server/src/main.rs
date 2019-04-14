@@ -1,46 +1,83 @@
+use std::io::Read;
 use std::time::Duration;
 
 use serialport::prelude::*;
 use std::sync::mpsc::channel;
 use std::thread::{spawn};
-use reqwest;
 
 use modem_comms::modem_task;
+use board_mgr::board_mgr_task;
 use protocol::CellCommand;
 
+use serde::de::DeserializeOwned;
+use serde::Deserialize;
+use std::path::Path;
+use std::fs::File;
+
 mod modem_comms;
+mod board_mgr;
+
+#[derive(Deserialize, Debug)]
+struct Config {
+    serial: SerialConfig,
+    squares: SquaresConfig,
+    board: board_mgr::BoardManagerConfig,
+}
+
+#[derive(Deserialize, Debug)]
+struct SerialConfig {
+    timeout_ms: u64,
+    baudrate: u32,
+    port: String,
+}
+
+#[derive(Deserialize, Debug)]
+struct SquaresConfig {
+    host: String,
+    port: u16,
+}
 
 fn main() {
+    let config: Config = just_load(Path::new("./draw.ron")).unwrap();
     let mut settings: SerialPortSettings = Default::default();
-    settings.timeout = Duration::from_millis(10);
-    settings.baud_rate = 115200;
+    settings.timeout = Duration::from_millis(config.serial.timeout_ms);
+    settings.baud_rate = config.serial.baudrate;
 
     let (prod_cmds, cons_cmds) = channel::<CellCommand>();
-    let client = reqwest::Client::new();
 
-    spawn(move || {
-        while let Ok(msg) = cons_cmds.recv() {
-            let req = client
-                .post("http://localhost:8000/cell")
-                .json(&msg.cell)
-                .send();
-
-            if let Err(e) = req {
-                eprintln!("post_err: {:?}", e);
-            }
-
-        }
-    });
-
-
-
-    match serialport::open_with_settings("/dev/ttyACM0", &settings) {
-        Ok(port) => {
-            modem_task(port, prod_cmds).unwrap();
-        }
+    let port = match serialport::open_with_settings(&config.serial.port, &settings) {
+        Ok(port) => port,
         Err(e) => {
-            eprintln!("Failed to open \"{}\". Error: {}", "/dev/ttyACM0", e);
+            eprintln!("Failed to open \"{}\". Error: {}", &config.serial.port, e);
             ::std::process::exit(1);
         }
-    }
+    };
+
+    let modem_hdl = spawn(move || modem_task(port, prod_cmds));
+    let board_hdl = spawn(move || board_mgr_task(
+        &format!(
+            "{}:{}",
+            config.squares.host,
+            config.squares.port
+        ),
+        cons_cmds
+        )
+    );
+
+    modem_hdl.join().unwrap().unwrap();
+    board_hdl.join().unwrap().unwrap();
+}
+
+/// Attempt to load the contents of a serialized file to a `T`
+///
+/// If anything goes wrong (file not available, schema mismatch),
+/// an error will be returned
+pub fn just_load<T>(path: &Path) -> Result<T, ()>
+where
+    T: DeserializeOwned,
+{
+    let mut file = File::open(path).map_err(|_| ())?;
+    let mut contents = String::new();
+    let _ = file.read_to_string(&mut contents);
+    ron::de::from_str(&contents).map_err(|e| panic!("{:?}", e))
 }
