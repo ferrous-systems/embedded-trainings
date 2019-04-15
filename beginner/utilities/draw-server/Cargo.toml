@@ -27,4 +27,4 @@ default-features = false
 features = ["derive"]
 
 [dependencies.protocol]
-path = "../protocol"
+path = "../../protocol"
