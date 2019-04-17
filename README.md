@@ -2,6 +2,10 @@
 
 [![Ferrous Systems](./images/ferrous-logo.png)](https://ferrous-systems.com/)
 
+## Preparing for the course
+
+If you are planning to participate in one of these trainings, please see the [Installation Instructions](./INSTALL.md) for obtaining the necessary prerequisites, and the [Verification Instructions](./VERIFY.md) to ensure that all tools have been successfully installed.
+
 ## License
 
 The Ferrous Systems Embedded Training Courses (this project) are distributed under the following licenses:
