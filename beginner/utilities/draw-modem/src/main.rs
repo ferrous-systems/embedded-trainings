@@ -32,9 +32,9 @@ use dwm1001::{
         Message,
     },
 };
-use heapless::{String, consts::*};
+use heapless::{String, Vec, consts::*};
 use rtfm::app;
-use postcard::from_bytes;
+use postcard::{from_bytes, from_bytes_cobs};
 
 // NOTE: Panic Provider
 use panic_ramdump as _;
@@ -45,7 +45,7 @@ use protocol::{
     CellCommand,
     RadioMessages,
 };
-use nrf52_bin_logger::Logger;
+use nrf52_bin_logger::{Logger, HackRxUart};
 
 const RX_PERIOD_US: u32 = 50_000;
 const IDLE_WARNING_US: u32 = 1_000_000;
@@ -129,8 +129,42 @@ const APP: () = {
         let mut buffer = [0u8; 1024];
         let mut strbuf: String<U1024> = String::new();
         let mut idle_ctr = 0u32;
+        let mut cobsr: Vec<u8, U128> = Vec::new();
+
+        resources.LOGGER.uart.start_receive();
 
         loop {
+            let mut buf = resources.LOGGER.uart.get_pending(&mut buffer).unwrap();
+
+            if buf.len() > 0 {
+                strbuf.clear();
+                write!(&mut strbuf, "GOT: {}", buf.len()).unwrap();
+
+                resources.LOGGER.warn(strbuf.as_str()).unwrap();
+                while let Some(idx) = buf.iter().position(|&n| n == 0u8) {
+                    let (frm, lat) = buf.split_at_mut(idx + 1);
+                    cobsr.extend_from_slice(frm).unwrap();
+
+                    match from_bytes_cobs(&mut *cobsr) {
+                        x @ Ok(ModemUartMessages::Loopback(_)) => {
+                            resources.LOGGER.data(x.unwrap()).unwrap();
+                        }
+                        Ok(_) => {
+                            resources.LOGGER.error("Unexpected Cobs!").unwrap();
+                        }
+                        Err(_) => {
+                            resources.LOGGER.error("Failed Decode!").unwrap();
+                        }
+                    }
+
+                    cobsr.clear();
+
+                    buf = lat;
+                }
+
+                cobsr.extend_from_slice(buf).unwrap();
+            }
+
             let mut rx = if let Ok(rx) = resources.DW1000.receive() {
                 rx
             } else {

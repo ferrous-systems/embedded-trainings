@@ -12,6 +12,7 @@ pub enum ModemUartMessages {
     RawPacket,
     LogMessage,
     SetCell(CellCommand),
+    Loopback(usize),
 }
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]

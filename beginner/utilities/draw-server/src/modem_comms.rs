@@ -1,8 +1,9 @@
 use serialport::prelude::*;
-use postcard::from_bytes;
+use postcard::{from_bytes, to_slice_cobs};
 use nrf52_bin_logger::LogOnLine;
 use protocol::{ModemUartMessages, CellCommand};
 use std::sync::mpsc::Sender;
+use std::time::{Instant, Duration};
 
 struct Modem {
     port: Box<dyn SerialPort>,
@@ -40,6 +41,10 @@ impl Modem {
                         self.since_last_err += 1;
                         resps.push(desmsg);
                     }
+                    Ok(ProtocolMessage(Loopback(val))) =>  {
+                        self.since_last_err += 1;
+                        eprintln!("Got Loopback! Good: {}", val == 0x4242_4242);
+                    }
                     Ok(other) => {
                         self.since_last_err += 1;
                         display(&other)
@@ -73,7 +78,20 @@ pub fn modem_task(port: Box<dyn SerialPort>, prod_cmds: Sender<CellCommand>) -> 
         since_last_err: 0,
     };
 
+    let mut last = Instant::now();
+
     loop {
+        if last.elapsed() >= Duration::from_millis(500) {
+            let mut buf = [0u8; 1024];
+            let buf2 = to_slice_cobs(
+                &ModemUartMessages::Loopback(0x4242_4242),
+                &mut buf
+            ).unwrap();
+
+            modem.port.write(&buf2).unwrap();
+
+            last = Instant::now();
+        }
         modem.process_serial()?
             .drain(..)
             .try_for_each(|m| {
