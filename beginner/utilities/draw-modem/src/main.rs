@@ -47,6 +47,9 @@ use protocol::{
 };
 use nrf52_bin_logger::Logger;
 
+const RX_PERIOD_US: u32 = 50_000;
+const IDLE_WARNING_US: u32 = 1_000_000;
+const IDLE_STEPDOWN: u32 = IDLE_WARNING_US / RX_PERIOD_US;
 
 #[app(device = dwm1001::nrf52832_hal::nrf52832_pac)]
 const APP: () = {
@@ -125,6 +128,7 @@ const APP: () = {
     fn idle() -> ! {
         let mut buffer = [0u8; 1024];
         let mut strbuf: String<U1024> = String::new();
+        let mut idle_ctr = 0u32;
 
         loop {
             let mut rx = if let Ok(rx) = resources.DW1000.receive() {
@@ -135,10 +139,13 @@ const APP: () = {
                 continue;
             };
 
-            resources.TIMER.start(1_000_000u32);
+            resources.TIMER.start(RX_PERIOD_US);
 
             match block_timeout!(&mut *resources.TIMER, rx.wait(&mut buffer)) {
                 Ok(message) => {
+                    // Reset idle ctr
+                    idle_ctr = 0;
+
                     if let Ok(resp) = process_message(
                         resources.LOGGER,
                         &message
@@ -151,7 +158,13 @@ const APP: () = {
                     }
                 },
                 Err(TimeoutError::Timeout) => {
-                    resources.LOGGER.log("RX Timeout").unwrap();
+                    idle_ctr += 1;
+
+                    if idle_ctr >= IDLE_STEPDOWN {
+                        resources.LOGGER.log("RX Timeout 1s").unwrap();
+                        idle_ctr = 0;
+                    }
+
                     // TODO: Rage on the
                     continue;
                 }

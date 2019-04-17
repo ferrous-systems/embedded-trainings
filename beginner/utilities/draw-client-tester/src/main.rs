@@ -38,6 +38,9 @@ use dwm1001::{
     block_timeout,
 };
 
+const NOMINAL_INTERVAL_US: u32 = 5_000;
+const JITTER_US: u32 = 1_000;
+
 
 #[entry]
 fn main() -> ! {
@@ -76,6 +79,9 @@ fn main() -> ! {
     let mut tx_buf = [0u8; 64];
 
     loop {
+        let jitter = (NOMINAL_INTERVAL_US - JITTER_US) + (rng.random_u32() % (JITTER_US * 2));
+        timer.start(jitter);
+
         let msg = RadioMessages::SetCell(Cell {
             row: ((rng.random_u8() % 8) + 1) as usize,
             column: ((rng.random_u8() % 8) + 1) as usize,
@@ -111,7 +117,6 @@ fn main() -> ! {
             toggle = 0;
         }
 
-
-        timer.delay(1_000);
+        while timer.wait().is_err() {}
     }
 }
