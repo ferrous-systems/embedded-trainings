@@ -12,9 +12,9 @@ For instructions on preparing your system for the workshop, please see the [Inst
 
 For trainer instructions, please see the [Instructor's Guide].
 
-[Decawave DWM1001-DEV]: #
+[Decawave DWM1001-DEV]: https://www.decawave.com/product/dwm1001-development-board/
 [Instructor's Guide]: ./docs/instructor-guide.md
-[Installation Instructions]: ./docs/INSTALL.md
+[Installation Instructions]: ../INSTALL.md
 
 
 ## Course Overview
