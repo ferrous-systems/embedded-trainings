@@ -1,6 +1,6 @@
 # Beginner Training
 
-[![Ferrous Systems](../images/ferrous-logo.png)](https://ferrous-systems.com/)
+[![Ferrous Systems](../images/ferrous-logo.svg)](https://ferrous-systems.com/)
 
 This is the Ferrous Systems beginner embedded training. It is aimed at developers who are familiar with Rust, as well as embedded systems, and are looking to learn more about embedded Rust. This training only covers a light review of the basics of the Rust Programming Language.
 
