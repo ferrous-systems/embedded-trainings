@@ -1,6 +1,6 @@
 # Embedded Training Courses
 
-[![Ferrous Systems](./images/ferrous-logo.png)](https://ferrous-systems.com/)
+[![Ferrous Systems](./images/ferrous-logo.svg)](https://ferrous-systems.com/)
 
 ## Preparing for the course
 
