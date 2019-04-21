@@ -4,15 +4,24 @@ use serde::{Serialize, Deserialize};
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub enum RadioMessages {
+    // Messages from clients to modem
     SetCell(Cell),
+
+    // Messages from modem to clients
+    StartTurn(u16),
 }
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub enum ModemUartMessages {
-    RawPacket,
-    LogMessage,
+    // Messages to the host system
     SetCell(CellCommand),
-    Loopback(usize),
+
+    // Commands to the embedded device
+    Loopback(u32),
+    AnnounceTurn(u16),
+
+    // Misc
+    LoadLoopBack([u64; 16])
 }
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]

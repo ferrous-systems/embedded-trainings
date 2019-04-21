@@ -13,7 +13,7 @@ struct Modem {
 }
 
 impl Modem {
-    fn process_serial(&mut self) -> Result<Vec<CellCommand>, ()> {
+    fn process_serial(&mut self) -> Result<Vec<ModemUartMessages>, ()> {
         let mut buf = [0u8; 1024];
         let buf = match self.port.read(&mut buf) {
             Ok(ct) => &buf[..ct],
@@ -27,29 +27,19 @@ impl Modem {
         self.push_bytes(buf)
     }
 
-    fn push_bytes(&mut self, mut data: &[u8]) -> Result<Vec<CellCommand>, ()> {
+    fn push_bytes(&mut self, mut data: &[u8]) -> Result<Vec<ModemUartMessages>, ()> {
         let mut resps = vec![];
 
         while let Some(idx) = data.iter().position(|&b| b == 0) {
             let (end, rest) = data.split_at(idx+1);
             self.cobs_buf.extend_from_slice(end);
 
-            use LogOnLine::*;
-            use ModemUartMessages::*;
             if let Ok(idx) = cobs::decode_in_place(&mut self.cobs_buf) {
                 match from_bytes::<LogOnLine<ModemUartMessages>>(&self.cobs_buf[..idx]) {
-                    Ok(ProtocolMessage(SetCell(desmsg))) =>  {
-                        self.since_last_err += 1;
-                        resps.push(desmsg);
+                    Ok(LogOnLine::ProtocolMessage(msg)) => {
+                        resps.push(msg);
                     }
-                    Ok(ProtocolMessage(Loopback(val))) =>  {
-                        self.since_last_err += 1;
-                        eprintln!("Got Loopback! Good: {}", val == 0x4242_4242);
-                    }
-                    Ok(other) => {
-                        self.since_last_err += 1;
-                        display(&other)
-                    },
+                    Ok(other) => display(&other),
                     Err(e) => {
                         eprintln!("bad_decode: {:?}, since_last: {}", e, self.since_last_err);
                         self.since_last_err = 0;
@@ -70,8 +60,11 @@ impl Modem {
     }
 }
 
-pub fn modem_task(port: Box<dyn SerialPort>, prod_cmds: Sender<CellCommand>) -> Result<(), ()> {
+pub fn modem_task(port: Box<dyn SerialPort>, _prod_cmds: Sender<CellCommand>) -> Result<(), ()> {
     println!("Receiving data on {} at {} baud:", port.name().unwrap(), port.baud_rate().unwrap());
+
+    use rand::Rng;
+    let mut rng = rand::thread_rng();
 
     let mut modem = Modem {
         port,
@@ -80,34 +73,54 @@ pub fn modem_task(port: Box<dyn SerialPort>, prod_cmds: Sender<CellCommand>) -> 
     };
 
     let mut last = Instant::now();
-    let mut last_ping = Instant::now();
-    let mut turn: u16 = 1;
+    let mut last_val = [0u64; 16];
+    let mut got_got = true;
 
     loop {
-        if last.elapsed() >= Duration::from_millis(3000) {
-            turn += 1;
-            if turn > 16 {
-                turn = 1;
-            }
-            last = Instant::now();
-            println!("!!! Changing turn to {}", turn);
-        }
-
-        if last_ping.elapsed() >= Duration::from_millis(500) {
+        if last.elapsed() >= Duration::from_millis(1000) {
             let mut buf = [0u8; 1024];
+            let mut randr = [0u64; 16];
+
+            if !got_got {
+                println!("Didn't get it.");
+            }
+            got_got = false;
+
+            randr.iter_mut().for_each(|i| {
+                *i = rng.gen();
+            });
+
+            last_val = randr.clone();
+
             let buf2 = to_slice_cobs(
-                &ModemUartMessages::AnnounceTurn(turn),
+                &ModemUartMessages::LoadLoopBack(randr),
                 &mut buf
             ).unwrap();
 
             modem.port.write(&buf2).unwrap();
-            last_ping = Instant::now();
+            last = Instant::now();
         }
 
         modem.process_serial()?
             .drain(..)
             .try_for_each(|m| {
-                prod_cmds.send(m).map_err(|_| ())
+                if let ModemUartMessages::LoadLoopBack(msg) = m {
+                    if msg == last_val {
+                        if !got_got {
+                            println!("Good!");
+                        } else {
+                            println!("Duplicate?");
+                        }
+                        got_got = true;
+                    } else {
+                        println!("Last exp: {:08X?}", last_val);
+                        println!("Bad Load: {:08X?}", msg);
+                    }
+                } else {
+                    println!("Bad! {:?}", m);
+                }
+
+                Ok(())
             })?;
     }
 }

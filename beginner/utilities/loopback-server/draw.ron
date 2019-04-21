@@ -1,7 +1,7 @@
 (
     serial: (
         timeout_ms: 100,
-        baudrate: 230_400,
+        baudrate: 230400,
         port: "/dev/ttyACM0",
     ),
     squares: (

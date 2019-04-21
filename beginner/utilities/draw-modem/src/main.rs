@@ -32,9 +32,9 @@ use dwm1001::{
         Message,
     },
 };
-use heapless::{String, Vec, consts::*};
+use heapless::{String, consts::*};
 use rtfm::app;
-use postcard::{from_bytes, from_bytes_cobs};
+use postcard::{from_bytes, to_slice};
 
 // NOTE: Panic Provider
 use panic_ramdump as _;
@@ -45,17 +45,31 @@ use protocol::{
     CellCommand,
     RadioMessages,
 };
-use nrf52_bin_logger::{Logger, HackRxUart};
+use nrf52_bin_logger::{
+    Logger,
+    senders::RealSender,
+    receivers::RealReceiver,
+};
 
-const RX_PERIOD_US: u32 = 50_000;
+const RX_PERIOD_US: u32 = 9_000;
 const IDLE_WARNING_US: u32 = 1_000_000;
 const IDLE_STEPDOWN: u32 = IDLE_WARNING_US / RX_PERIOD_US;
+type ModemLogger = Logger<
+    // Send logs + ModemUartMessages, max outgoing serialized
+    // message size is 128 bytes
+    RealSender<ModemUartMessages, U128>,
+
+    // Receive ModemUartMessages, max incoming serialized message
+    // size is 256 bytes, store up to 8 parsed messages
+    RealReceiver<ModemUartMessages, U2048, U64>,
+>;
+
 
 #[app(device = dwm1001::nrf52832_hal::nrf52832_pac)]
 const APP: () = {
     static mut LED_RED_1: Pin<Output<PushPull>>     = ();
     static mut TIMER:     Timer<TIMER0>             = ();
-    static mut LOGGER:    Logger<U1024, ModemUartMessages> = ();
+    static mut LOGGER:    ModemLogger = ();
     static mut DW1000:    DW<
                             Spim<SPIM2>,
                             P0_17<Output<PushPull>>,
@@ -129,40 +143,50 @@ const APP: () = {
         let mut buffer = [0u8; 1024];
         let mut strbuf: String<U1024> = String::new();
         let mut idle_ctr = 0u32;
-        let mut cobsr: Vec<u8, U128> = Vec::new();
+        let mut toggle = false;
 
-        resources.LOGGER.uart.start_receive();
+        resources.LOGGER.start_receive().unwrap();
 
         loop {
-            let mut buf = resources.LOGGER.uart.get_pending(&mut buffer).unwrap();
+            // Process incoming messages
+            if resources.LOGGER.service_receive().unwrap() > 0 {
+                while let Some(msg) = resources.LOGGER.get_msg() {
+                    if toggle {
+                        resources.LED_RED_1.set_low();
+                    } else {
+                        resources.LED_RED_1.set_high();
+                    }
+                    toggle = !toggle;
 
-            if buf.len() > 0 {
-                strbuf.clear();
-                write!(&mut strbuf, "GOT: {}", buf.len()).unwrap();
-
-                resources.LOGGER.warn(strbuf.as_str()).unwrap();
-                while let Some(idx) = buf.iter().position(|&n| n == 0u8) {
-                    let (frm, lat) = buf.split_at_mut(idx + 1);
-                    cobsr.extend_from_slice(frm).unwrap();
-
-                    match from_bytes_cobs(&mut *cobsr) {
-                        x @ Ok(ModemUartMessages::Loopback(_)) => {
-                            resources.LOGGER.data(x.unwrap()).unwrap();
+                    match msg {
+                        x @ ModemUartMessages::Loopback(_) => {
+                            resources.LOGGER.data(x).unwrap();
                         }
-                        Ok(_) => {
+                        ModemUartMessages::AnnounceTurn(id) => {
+                            let msg = RadioMessages::StartTurn(id);
+                            let msg_buf = to_slice(&msg, &mut buffer).unwrap();
+
+                            resources.LOGGER.log("Changing turn!").unwrap();
+
+                            let mut tx = resources.DW1000
+                                .send(
+                                    msg_buf,
+                                    Address {
+                                        pan_id:     0x0386,
+                                        short_addr: BROADCAST,
+                                    },
+                                    None
+                                )
+                                .expect("Failed to start send");
+
+                            block!(tx.wait())
+                                .expect("Failed to send data");
+                        }
+                        _ => {
                             resources.LOGGER.error("Unexpected Cobs!").unwrap();
                         }
-                        Err(_) => {
-                            resources.LOGGER.error("Failed Decode!").unwrap();
-                        }
                     }
-
-                    cobsr.clear();
-
-                    buf = lat;
                 }
-
-                cobsr.extend_from_slice(buf).unwrap();
             }
 
             let mut rx = if let Ok(rx) = resources.DW1000.receive() {
@@ -195,6 +219,10 @@ const APP: () = {
                     idle_ctr += 1;
 
                     if idle_ctr >= IDLE_STEPDOWN {
+                        strbuf.clear();
+                        let (lbyt, lmsg) = resources.LOGGER.get_stats();
+                        write!(&mut strbuf, "Lost: {} bytes, {} msgs", lbyt, lmsg).unwrap();
+                        resources.LOGGER.warn(strbuf.as_str()).unwrap();
                         resources.LOGGER.log("RX Timeout 1s").unwrap();
                         idle_ctr = 0;
                     }
@@ -217,7 +245,7 @@ const MODEM_PAN: u16 = 0x0386;
 const MODEM_ADDR: u16 = 0x0808;
 const BROADCAST: u16 = 0xFFFF;
 
-fn process_message(logger: &mut Logger<U1024, ModemUartMessages>, msg: &Message) -> Result<ModemUartMessages, ()> {
+fn process_message(logger: &mut ModemLogger, msg: &Message) -> Result<ModemUartMessages, ()> {
     if msg.frame.header.source.pan_id == BROADCAST {
         logger.error("bad bdcst pan!").unwrap();
         return Err(())
@@ -246,6 +274,9 @@ fn process_message(logger: &mut Logger<U1024, ModemUartMessages>, msg: &Message)
                     dest: msg.frame.header.destination.short_addr,
                     cell: sc
                 }));
+            }
+            RadioMessages::StartTurn(_) => {
+                logger.warn("ClientMSGS_PER_SEC tried to annouce turn!").unwrap();
             }
         }
     } else {
