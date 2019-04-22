@@ -17,7 +17,7 @@ version = "0.3.2"
 features = ["use-std"]
 
 [dependencies.nrf52-bin-logger]
-version = "0.1.1"
+version = "0.3.0"
 # This was a mistake
 features = ["xxAA"]
 
