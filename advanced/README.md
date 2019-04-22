@@ -79,7 +79,7 @@ High Level Goals of this section are:
 [`heapless`]: https://docs.rs/heapless
 [`bbqueue`]: https://docs.rs/bbqueue
 
-### Segment 4:
+### Segment 4: Taking it further
 
 [Detailed Segment 4 Instructions](./docs/segment-4.md)
 
