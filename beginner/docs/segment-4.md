@@ -19,6 +19,12 @@ During your turn, your maximum message rate will be increased to 128 messages pe
 
 Students are free to implement one or more of the following strategies for drawing on the screen, increasing in difficulty:
 
+## Strategy Zero: Send all day
+
+You may decide to just continuously send messages, disregarding whether it is your turn or not. As a note, this will rate-limit your messages, reducing your ability to draw to 16 messages per second (one message per 62.5 milliseconds). All messages sent more often than this will be discarded.
+
+This strategy requires the student to reduce their sending rate, or risk loss of messages sent to the board.
+
 ## Strategy One: Manual Control using the debugger
 
 You may load your program to the device, and wait to begin running code until your turn. Once your turn ends, you may stop the program using the debugger.

@@ -21,12 +21,6 @@ For trainer instructions, please see the [Instructor's Guide].
 
 The following is a high level overview of the four segments of this course.
 
-```
-Phase 3 is getting them to use interrupts and/or DMA to make it non blocking. Here we'll talk a bit about making unsafe abstractions safe. I'll probably offer heapless, bbqueue, and RTFM as possible options they can choose as building blocks here.
-
-Phase 4 is a little open ended. They can start drawing from their PC through the radio, or I'll probably also have the modem for the drawing board answer ranging requests as well. I'm open to "stretch goal" ideas :)
-```
-
 ### Segment 1: Warming Up
 
 [Detailed Segment 1 Instructions](./docs/segment-1.md)
