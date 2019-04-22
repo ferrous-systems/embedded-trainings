@@ -1,7 +1,7 @@
 (
     serial: (
         timeout_ms: 100,
-        baudrate: 230_400,
+        baudrate: 115_200,
         port: "/dev/ttyACM0",
     ),
     squares: (
@@ -9,7 +9,7 @@
         port: 8000,
     ),
     board: (
-        clear_interval: ( secs: 6000, nanos: 0 ),
+        clear_interval: ( secs: 60, nanos: 0 ),
         partitions: Some({
             // Row
             1: (

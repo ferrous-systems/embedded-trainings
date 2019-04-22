@@ -84,7 +84,7 @@ pub fn modem_task(port: Box<dyn SerialPort>, prod_cmds: Sender<CellCommand>) -> 
     let mut turn: u16 = 1;
 
     loop {
-        if last.elapsed() >= Duration::from_millis(3000) {
+        if last.elapsed() >= Duration::from_millis(5000) {
             turn += 1;
             if turn > 16 {
                 turn = 1;
