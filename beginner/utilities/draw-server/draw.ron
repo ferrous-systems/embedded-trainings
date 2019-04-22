@@ -13,10 +13,8 @@
             x: ( start: 1, end: 32 ),
             y: ( start: 1, end: 32 ),
         ),
-        mode: RoundRobin (
-            turn_interval: ( secs: 5, nanos: 0 ),
-            notify_interval: ( secs: 0, nanos: 500_000_000 ),
-            players: [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 ],
+        mode: FreeDraw(
+            clear_interval: ( secs: 60, nanos: 0 ),
         ),
     )
 )
