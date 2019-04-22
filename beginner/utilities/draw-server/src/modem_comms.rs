@@ -2,7 +2,7 @@ use serialport::prelude::*;
 use postcard::{from_bytes, to_slice_cobs};
 use nrf52_bin_logger::LogOnLine;
 use protocol::{ModemUartMessages, CellCommand};
-use std::sync::mpsc::{Sender, Receiver};
+use std::sync::mpsc::{Sender, Receiver, TryRecvError};
 use std::time::{Instant, Duration};
 
 struct Modem {
@@ -83,30 +83,20 @@ pub fn modem_task(
         since_last_err: 0,
     };
 
-    let mut last = Instant::now();
-    let mut last_ping = Instant::now();
-    let mut turn: u16 = 1;
-
     loop {
-        if last.elapsed() >= Duration::from_millis(5000) {
-            turn += 1;
-            if turn > 16 {
-                turn = 1;
+        match cons_rqst.try_recv() {
+            Ok(msg) => {
+                let mut buf = [0u8; 1024];
+                let buf2 = to_slice_cobs(
+                    &msg,
+                    &mut buf
+                ).map_err(|_| ())?;
+
+                modem.port.write(&buf2).map_err(|_| ())?;
             }
-            last = Instant::now();
-            println!("!!! Changing turn to {}", turn);
-        }
-
-        if last_ping.elapsed() >= Duration::from_millis(500) {
-            let mut buf = [0u8; 1024];
-            let buf2 = to_slice_cobs(
-                &ModemUartMessages::AnnounceTurn(turn),
-                &mut buf
-            ).unwrap();
-
-            modem.port.write(&buf2).unwrap();
-            last_ping = Instant::now();
-        }
+            Err(TryRecvError::Empty) => {},
+            Err(TryRecvError::Disconnected) => return Err(()),
+        };
 
         modem.process_serial()?
             .drain(..)

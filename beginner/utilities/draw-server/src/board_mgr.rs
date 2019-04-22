@@ -22,6 +22,7 @@ enum BoardMode {
     },
     RoundRobin {
         turn_interval: Duration,
+        notify_interval: Duration,
         players: Vec<u16>,
     }
 }
@@ -92,6 +93,123 @@ fn drawing(
     }
 }
 
+struct Color {
+    red: u8,
+    green: u8,
+    blue: u8,
+}
+
+fn turns(
+    players: &Vec<u16>,
+    board: &Segment,
+    mut client: reqwest::Client,
+    cell_endpoint: &str,
+    cons_cmds: Receiver<CellCommand>,
+    prod_rqst: Sender<ModemUartMessages>,
+    turn_interval: Duration,
+    notify_interval: Duration,
+) -> Result<(), ()> {
+    let mut boards: HashMap<u16, Vec<Vec<Color>>> = HashMap::new();
+    let mut rng = rand::thread_rng();
+
+    // Initialize each board with random colors
+    for player in players.iter() {
+        let red = rng.gen_range(0, u8::max_value() / 4);
+        let grn = rng.gen_range(0, u8::max_value() / 4);
+        let blu = rng.gen_range(0, u8::max_value() / 4);
+
+        let mut boardvec = Vec::with_capacity(*board.y.end());
+
+        for _y in 0..*board.y.end() {
+            let mut row = Vec::with_capacity(*board.x.end());
+            for _x in 0..*board.x.end() {
+                row.push(Color { red: red, green: grn, blue: blu });
+            }
+            boardvec.push(row);
+        }
+
+        boards.insert(*player, boardvec);
+    }
+
+    for player in players.iter().cycle() {
+        let start_turn = Instant::now();
+
+        // Send announcement
+        prod_rqst.send(ModemUartMessages::AnnounceTurn(*player)).unwrap();
+        let mut last_announce = Instant::now();
+
+        // Restore board
+        set_map(boards.get(player).unwrap(), &mut client, cell_endpoint);
+
+        // Process messages for decided time
+        while start_turn.elapsed() < turn_interval {
+            if last_announce.elapsed() < notify_interval {
+                prod_rqst.send(ModemUartMessages::AnnounceTurn(*player)).unwrap();
+                last_announce = Instant::now();
+            }
+
+            let msg = match cons_cmds.recv_timeout(Duration::from_millis(100)) {
+                Ok(msg) => Ok(msg),
+                Err(RecvTimeoutError::Timeout) => continue,
+                Err(e) => {
+                    eprintln!("cons_cmds receive error! {:?}", e);
+                    Err(())
+                }
+            }.unwrap();
+
+            if msg.source != *player {
+                eprintln!("Player {} sent out of turn!", msg.source);
+                continue;
+            }
+
+            if let Ok((x, y)) = validate_and_remap(board, None, &msg) {
+                // We know that the range is valid for the board
+                boards.get_mut(player).unwrap()[y-1][x-1] = Color { red: msg.cell.red, green: msg.cell.green, blue: msg.cell.blue };
+
+                let req = client
+                    .post(cell_endpoint)
+                    .json(&Cell {
+                        column: x,
+                        row: y,
+                        .. msg.cell
+                    })
+                    .send();
+
+                if let Err(e) = req {
+                    eprintln!("post_err: {:?}", e);
+                }
+            } else {
+                eprintln!("Out of range: {:?}", msg);
+            }
+        }
+    }
+
+    Ok(())
+}
+
+fn set_map(y_x: &Vec<Vec<Color>>, client: &mut reqwest::Client, cell_endpoint: &str) {
+    for (i, y) in y_x.iter().enumerate() {
+        for (j, x) in y.iter().enumerate() {
+            'retry: for _ in 0..3 {
+                let req = client
+                    .post(cell_endpoint)
+                    .json(&Cell {
+                        column: j + 1,
+                        row: i + 1,
+                        red: x.red,
+                        green: x.green,
+                        blue: x.blue,
+                    })
+                    .send();
+
+                if req.is_ok() {
+                    break 'retry;
+                }
+            }
+        }
+    }
+}
+
 fn clear_map(x_max: usize, y_max: usize, client: &mut reqwest::Client, cell_endpoint: &str) {
     let mut rng = rand::thread_rng();
 
@@ -102,19 +220,21 @@ fn clear_map(x_max: usize, y_max: usize, client: &mut reqwest::Client, cell_endp
 
     for x in 1..=x_max {
         for y in 1..=y_max {
-            let req = client
-                .post(cell_endpoint)
-                .json(&Cell {
-                    column: x,
-                    row: y,
-                    red: red,
-                    green: grn,
-                    blue: blu,
-                })
-                .send();
+            'retry: for _ in 0..3 {
+                let req = client
+                    .post(cell_endpoint)
+                    .json(&Cell {
+                        column: x,
+                        row: y,
+                        red: red,
+                        green: grn,
+                        blue: blu,
+                    })
+                    .send();
 
-            if let Err(e) = req {
-                eprintln!("Error clearing screen! {:?}", e);
+                if req.is_ok() {
+                    break 'retry;
+                }
             }
         }
     }
@@ -152,7 +272,18 @@ pub fn board_mgr_task(
                 Some(partitions),
             )
         }
-        RoundRobin { .. } => unimplemented!(),
+        RoundRobin { turn_interval, notify_interval, ref players } => {
+            turns(
+                players,
+                &cfg_bd.total_board,
+                client,
+                cell_endpoint,
+                cons_cmds,
+                prod_rqst,
+                turn_interval,
+                notify_interval,
+            )
+        },
     }
 }
 
