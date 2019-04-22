@@ -2,9 +2,8 @@ use serialport::prelude::*;
 use postcard::{from_bytes, to_slice_cobs};
 use nrf52_bin_logger::LogOnLine;
 use protocol::{ModemUartMessages, CellCommand};
-use std::sync::mpsc::Sender;
+use std::sync::mpsc::{Sender, Receiver};
 use std::time::{Instant, Duration};
-use std::thread::sleep;
 
 struct Modem {
     port: Box<dyn SerialPort>,
@@ -70,7 +69,12 @@ impl Modem {
     }
 }
 
-pub fn modem_task(port: Box<dyn SerialPort>, prod_cmds: Sender<CellCommand>) -> Result<(), ()> {
+pub fn modem_task(
+    port: Box<dyn SerialPort>,
+    prod_cmds: Sender<CellCommand>,
+    cons_rqst: Receiver<ModemUartMessages>,
+) -> Result<(), ()>
+{
     println!("Receiving data on {} at {} baud:", port.name().unwrap(), port.baud_rate().unwrap());
 
     let mut modem = Modem {
