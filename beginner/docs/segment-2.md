@@ -1,6 +1,6 @@
 # Segment 2 detailed instructions
 
-This segment aims to allow the students to stretch their legs, and make some larger modifications to the template given in Segment 1. Students will be asked to implement a sweeping "K.I.T.T" or "Cylon Eye" LED pattern using the four LEDs found on the board.
+This segment aims to allow the students to stretch their legs, and make some larger modifications to the template given in Segment 1. Students will be asked to implement a sweeping ["K.I.T.T"](https://www.youtube.com/watch?v=WxE2xWZNfOc) or ["Cylon Eye"](https://media.giphy.com/media/2gWGC0m2zBLsQ/giphy.gif) LED pattern using the four LEDs found on the board.
 
 Students are encouraged to take advantage of features in Rust, such as iterators, to implement their LED patterns. As a stretch goal, students may implement multiple patterns, cycling through them sequentially, alternating patterns randomly, or switching based on some sort of external input, such as a button press.
 
