@@ -17,6 +17,7 @@ use dwm1001::{
         spim::{Spim},
         nrf52832_pac::{
             TIMER0,
+            TIMER1,
             SPIM2,
         },
         uarte::Baudrate as UartBaudrate,
@@ -34,7 +35,7 @@ use dwm1001::{
 };
 use heapless::{String, consts::*};
 use rtfm::app;
-use postcard::from_bytes;
+use postcard::{from_bytes, to_slice};
 
 // NOTE: Panic Provider
 use panic_ramdump as _;
@@ -45,17 +46,32 @@ use protocol::{
     CellCommand,
     RadioMessages,
 };
-use nrf52_bin_logger::Logger;
+use nrf52_bin_logger::{
+    Logger,
+    senders::RealSender,
+    receivers::RealReceiver,
+};
 
-const RX_PERIOD_US: u32 = 50_000;
+const RX_PERIOD_US: u32 = 100_000;
 const IDLE_WARNING_US: u32 = 1_000_000;
 const IDLE_STEPDOWN: u32 = IDLE_WARNING_US / RX_PERIOD_US;
+type ModemLogger = Logger<
+    // Send logs + ModemUartMessages, max outgoing serialized
+    // message size is 128 bytes
+    RealSender<ModemUartMessages, U128>,
+
+    // Receive ModemUartMessages, max incoming serialized message
+    // size is 256 bytes, store up to 8 parsed messages
+    RealReceiver<ModemUartMessages, U2048, U64>,
+>;
+
 
 #[app(device = dwm1001::nrf52832_hal::nrf52832_pac)]
 const APP: () = {
     static mut LED_RED_1: Pin<Output<PushPull>>     = ();
-    static mut TIMER:     Timer<TIMER0>             = ();
-    static mut LOGGER:    Logger<U1024, ModemUartMessages> = ();
+    static mut TIMER_1:     Timer<TIMER0>             = ();
+    static mut TIMER_2:     Timer<TIMER1>             = ();
+    static mut LOGGER:    ModemLogger = ();
     static mut DW1000:    DW<
                             Spim<SPIM2>,
                             P0_17<Output<PushPull>>,
@@ -66,11 +82,13 @@ const APP: () = {
 
     #[init]
     fn init() {
-        let timer = device.TIMER0.constrain();
+        let timer_1 = device.TIMER0.constrain();
+        let timer_2 = device.TIMER1.constrain();
+
         let pins = device.P0.split();
 
         let mut uc = UsbUarteConfig::default();
-        uc.baudrate = UartBaudrate::BAUD230400;
+        uc.baudrate = UartBaudrate::BAUD115200;
 
         let uarte0 = new_usb_uarte(
             device.UARTE0,
@@ -120,28 +138,78 @@ const APP: () = {
         DW_RST_PIN = rst_pin;
         DW1000 = dw1000;
         LOGGER = Logger::new(uarte0);
-        TIMER = timer;
+        TIMER_1 = timer_1;
+        TIMER_2 = timer_2;
         LED_RED_1 = pins.p0_14.degrade().into_push_pull_output(Level::High);
     }
 
-    #[idle(resources = [TIMER, LED_RED_1, LOGGER, RANDOM, DW1000])]
+    #[idle(resources = [TIMER_1, TIMER_2, LED_RED_1, LOGGER, RANDOM, DW1000])]
     fn idle() -> ! {
         let mut buffer = [0u8; 1024];
         let mut strbuf: String<U1024> = String::new();
         let mut idle_ctr = 0u32;
+        let mut toggle = false;
+
+        resources.LOGGER.start_receive().unwrap();
+        resources.TIMER_2.start(250_000u32);
 
         loop {
+            // Process incoming messages
+            if resources.TIMER_2.wait().is_err() {
+                resources.TIMER_2.start(250_000u32);
+
+                if resources.LOGGER.service_receive().unwrap() > 0 {
+                    while let Some(msg) = resources.LOGGER.get_msg() {
+                        if toggle {
+                            resources.LED_RED_1.set_low();
+                        } else {
+                            resources.LED_RED_1.set_high();
+                        }
+                        toggle = !toggle;
+
+                        match msg {
+                            x @ ModemUartMessages::Loopback(_) => {
+                                resources.LOGGER.data(x).unwrap();
+                            }
+                            ModemUartMessages::AnnounceTurn(id) => {
+                                let msg = RadioMessages::StartTurn(id);
+                                let msg_buf = to_slice(&msg, &mut buffer).unwrap();
+
+                                let mut tx = resources.DW1000
+                                    .send(
+                                        msg_buf,
+                                        Address {
+                                            pan_id:     0x0386,
+                                            short_addr: BROADCAST,
+                                        },
+                                        None
+                                    )
+                                    .expect("Failed to start send");
+
+                                block!(tx.wait())
+                                    .expect("Failed to send data");
+                            }
+                            _ => {
+                                resources.LOGGER.error("Unexpected Cobs!").unwrap();
+                            }
+                        }
+                    }
+                }
+
+            }
+
+
             let mut rx = if let Ok(rx) = resources.DW1000.receive() {
                 rx
             } else {
                 resources.LOGGER.warn("Failed to start receive!").unwrap();
-                resources.TIMER.delay(250_000);
+                resources.TIMER_1.delay(250_000);
                 continue;
             };
 
-            resources.TIMER.start(RX_PERIOD_US);
+            resources.TIMER_1.start(RX_PERIOD_US);
 
-            match block_timeout!(&mut *resources.TIMER, rx.wait(&mut buffer)) {
+            match block_timeout!(&mut *resources.TIMER_1, rx.wait(&mut buffer)) {
                 Ok(message) => {
                     // Reset idle ctr
                     idle_ctr = 0;
@@ -161,6 +229,10 @@ const APP: () = {
                     idle_ctr += 1;
 
                     if idle_ctr >= IDLE_STEPDOWN {
+                        strbuf.clear();
+                        let (lbyt, lmsg) = resources.LOGGER.get_stats();
+                        write!(&mut strbuf, "Lost: {} bytes, {} msgs", lbyt, lmsg).unwrap();
+                        resources.LOGGER.warn(strbuf.as_str()).unwrap();
                         resources.LOGGER.log("RX Timeout 1s").unwrap();
                         idle_ctr = 0;
                     }
@@ -183,7 +255,7 @@ const MODEM_PAN: u16 = 0x0386;
 const MODEM_ADDR: u16 = 0x0808;
 const BROADCAST: u16 = 0xFFFF;
 
-fn process_message(logger: &mut Logger<U1024, ModemUartMessages>, msg: &Message) -> Result<ModemUartMessages, ()> {
+fn process_message(logger: &mut ModemLogger, msg: &Message) -> Result<ModemUartMessages, ()> {
     if msg.frame.header.source.pan_id == BROADCAST {
         logger.error("bad bdcst pan!").unwrap();
         return Err(())
@@ -212,6 +284,9 @@ fn process_message(logger: &mut Logger<U1024, ModemUartMessages>, msg: &Message)
                     dest: msg.frame.header.destination.short_addr,
                     cell: sc
                 }));
+            }
+            RadioMessages::StartTurn(_) => {
+                logger.warn("ClientMSGS_PER_SEC tried to annouce turn!").unwrap();
             }
         }
     } else {

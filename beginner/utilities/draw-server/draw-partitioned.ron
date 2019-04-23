@@ -1,0 +1,94 @@
+(
+    serial: (
+        timeout_ms: 100,
+        baudrate: 115_200,
+        port: "/dev/ttyACM0",
+    ),
+    squares: (
+        host: "http://localhost",
+        port: 8000,
+    ),
+    board: (
+        total_board: (
+            x: ( start: 1, end: 32 ),
+            y: ( start: 1, end: 32 ),
+        ),
+        mode: Partitioned(
+            clear_interval: ( secs: 60, nanos: 0 ),
+            partitions: {
+                // Row
+                1: (
+                    x: ( start: 1, end: 8 ),
+                    y: ( start: 1, end: 8 ),
+                ),
+                2: (
+                    x: ( start: 9, end: 16 ),
+                    y: ( start: 1, end: 8 ),
+                ),
+                3: (
+                    x: ( start: 17, end: 24 ),
+                    y: ( start: 1,  end: 8 ),
+                ),
+                4: (
+                    x: ( start: 25, end: 32 ),
+                    y: ( start: 1,  end: 8 ),
+                ),
+
+                // Row
+                5: (
+                    x: ( start: 1, end: 8 ),
+                    y: ( start: 9, end: 16 ),
+                ),
+                6: (
+                    x: ( start: 9, end: 16 ),
+                    y: ( start: 9, end: 16 ),
+                ),
+                7: (
+                    x: ( start: 17, end: 24 ),
+                    y: ( start: 9,  end: 16 ),
+                ),
+                8: (
+                    x: ( start: 25, end: 32 ),
+                    y: ( start: 9,  end: 16 ),
+                ),
+
+                // Row
+                9: (
+                    x: ( start: 1,  end: 8 ),
+                    y: ( start: 17, end: 24 ),
+                ),
+                10: (
+                    x: ( start: 9,  end: 16 ),
+                    y: ( start: 17, end: 24 ),
+                ),
+                11: (
+                    x: ( start: 17, end: 24 ),
+                    y: ( start: 17, end: 24 ),
+                ),
+                12: (
+                    x: ( start: 25, end: 32 ),
+                    y: ( start: 17, end: 24 ),
+                ),
+
+                // Row
+                13: (
+                    x: ( start: 1,  end: 8 ),
+                    y: ( start: 25, end: 32 ),
+                ),
+                14: (
+                    x: ( start: 9,  end: 16 ),
+                    y: ( start: 25, end: 32 ),
+                ),
+                15: (
+                    x: ( start: 17, end: 24 ),
+                    y: ( start: 25, end: 32 ),
+                ),
+                16: (
+                    x: ( start: 25, end: 32 ),
+                    y: ( start: 25, end: 32 ),
+                ),
+
+            },
+        ),
+    )
+)

@@ -12,7 +12,7 @@ use heapless::String as HString;
 use nb::block;
 
 use protocol::{RadioMessages, Cell};
-use postcard::to_slice;
+use postcard::{to_slice, from_bytes};
 
 // Used to set the program entry point
 use cortex_m_rt::entry;
@@ -32,15 +32,17 @@ use dwm1001::{
             Message,
         },
         mac,
+        macros::TimeoutError,
     },
 
     DWM1001,
     block_timeout,
 };
 
-const NOMINAL_INTERVAL_US: u32 = 5_000;
-const JITTER_US: u32 = 1_000;
-
+const MSGS_PER_SEC: u32 = 8;
+const NOMINAL_INTERVAL_US: u32 = 1_000_000 / MSGS_PER_SEC;
+const JITTER_US: u32 = NOMINAL_INTERVAL_US / 10;
+const TICKS_PER_S: u32 = 1_000_000 / NOMINAL_INTERVAL_US;
 
 #[entry]
 fn main() -> ! {
@@ -76,19 +78,35 @@ fn main() -> ! {
     }
 
     let mut toggle = 0u32;
+    let mut toggle2 = false;
     let mut tx_buf = [0u8; 64];
+    let mut rx_buf = [0u8; 1024];
+
+    let mut x = 1;
+    let mut y = 1;
 
     loop {
         let jitter = (NOMINAL_INTERVAL_US - JITTER_US) + (rng.random_u32() % (JITTER_US * 2));
         timer.start(jitter);
 
         let msg = RadioMessages::SetCell(Cell {
-            row: ((rng.random_u8() % 8) + 1) as usize,
-            column: ((rng.random_u8() % 8) + 1) as usize,
+            row: y,
+            column: x,
             red: rng.random_u8(),
             green: rng.random_u8(),
             blue: rng.random_u8(),
         });
+
+        x += 1;
+
+        if x > 8 {
+            x = 1;
+            y += 1;
+        }
+
+        if y > 8 {
+            y = 1;
+        }
 
         let msg_buf = to_slice(&msg, &mut tx_buf).unwrap();
 
@@ -110,13 +128,56 @@ fn main() -> ! {
 
         toggle += 1;
 
-        if toggle == 100 {
+        if toggle == TICKS_PER_S {
             board.leds.D10.enable();
-        } else if toggle >= 200 {
+        } else if toggle >= (2 * TICKS_PER_S) {
             board.leds.D10.disable();
             toggle = 0;
         }
 
-        while timer.wait().is_err() {}
+
+        let mut rx = if let Ok(rx) = dw1000.receive() {
+            rx
+        } else {
+            while timer.wait().is_err() {}
+            continue;
+        };
+
+        match block_timeout!(&mut timer, rx.wait(&mut rx_buf)) {
+            Ok(message) => {
+                if let Ok(pmsg) = from_bytes::<RadioMessages>(message.frame.payload) {
+                    if let RadioMessages::StartTurn(addr) = pmsg {
+
+                        if toggle2 {
+                            board.leds.D11.enable();
+                        } else {
+                            board.leds.D11.disable();
+                        }
+                        toggle2 = !toggle2;
+
+                        let mac_addr = mac::Address {
+                            pan_id: 0x0386,
+                            short_addr: addr,
+                        };
+
+                        // I am become turn
+                        'addr: loop {
+                            if dw1000.set_address(mac_addr).is_err() {
+                                continue 'addr;
+                            }
+
+                            if let Ok(raddr) = dw1000.get_address() {
+                                if mac_addr == raddr {
+                                    break 'addr;
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            Err(TimeoutError::Timeout) => { }
+            Err(TimeoutError::Other(error)) => { }
+        };
+
     }
 }

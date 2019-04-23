@@ -1,8 +1,9 @@
 use serialport::prelude::*;
-use postcard::from_bytes;
+use postcard::{from_bytes, to_slice_cobs};
 use nrf52_bin_logger::LogOnLine;
 use protocol::{ModemUartMessages, CellCommand};
-use std::sync::mpsc::Sender;
+use std::sync::mpsc::{Sender, Receiver, TryRecvError};
+use std::time::{Instant, Duration};
 
 struct Modem {
     port: Box<dyn SerialPort>,
@@ -40,6 +41,10 @@ impl Modem {
                         self.since_last_err += 1;
                         resps.push(desmsg);
                     }
+                    Ok(ProtocolMessage(Loopback(val))) =>  {
+                        self.since_last_err += 1;
+                        eprintln!("Got Loopback! Good: {}", val == 0x4242_4242);
+                    }
                     Ok(other) => {
                         self.since_last_err += 1;
                         display(&other)
@@ -64,7 +69,12 @@ impl Modem {
     }
 }
 
-pub fn modem_task(port: Box<dyn SerialPort>, prod_cmds: Sender<CellCommand>) -> Result<(), ()> {
+pub fn modem_task(
+    port: Box<dyn SerialPort>,
+    prod_cmds: Sender<CellCommand>,
+    cons_rqst: Receiver<ModemUartMessages>,
+) -> Result<(), ()>
+{
     println!("Receiving data on {} at {} baud:", port.name().unwrap(), port.baud_rate().unwrap());
 
     let mut modem = Modem {
@@ -74,6 +84,20 @@ pub fn modem_task(port: Box<dyn SerialPort>, prod_cmds: Sender<CellCommand>) -> 
     };
 
     loop {
+        match cons_rqst.try_recv() {
+            Ok(msg) => {
+                let mut buf = [0u8; 1024];
+                let buf2 = to_slice_cobs(
+                    &msg,
+                    &mut buf
+                ).map_err(|_| ())?;
+
+                modem.port.write(&buf2).map_err(|_| ())?;
+            }
+            Err(TryRecvError::Empty) => {},
+            Err(TryRecvError::Disconnected) => return Err(()),
+        };
+
         modem.process_serial()?
             .drain(..)
             .try_for_each(|m| {
