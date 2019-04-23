@@ -36,7 +36,11 @@ impl Modem {
             use LogOnLine::*;
             use ModemUartMessages::*;
             if let Ok(idx) = cobs::decode_in_place(&mut self.cobs_buf) {
-                match from_bytes::<LogOnLine<ModemUartMessages>>(&self.cobs_buf[..idx]) {
+                let decode_result = from_bytes::<LogOnLine<ModemUartMessages>>(&self.cobs_buf[..idx]);
+                if let Ok(ref msg) = decode_result {
+                    display(&msg);
+                }
+                match decode_result {
                     Ok(ProtocolMessage(SetCell(desmsg))) =>  {
                         self.since_last_err += 1;
                         resps.push(desmsg);
@@ -45,9 +49,8 @@ impl Modem {
                         self.since_last_err += 1;
                         eprintln!("Got Loopback! Good: {}", val == 0x4242_4242);
                     }
-                    Ok(other) => {
+                    Ok(_other) => {
                         self.since_last_err += 1;
-                        display(&other)
                     },
                     Err(e) => {
                         eprintln!("bad_decode: {:?}, since_last: {}", e, self.since_last_err);
@@ -120,7 +123,9 @@ fn display(msg: &LogOnLine<ModemUartMessages>) {
         LogOnLine::BinaryRaw(log) => {
             eprintln!("{}", prefixed_lines(&format!("{:02X?}", log), "BIN"));
         }
-        _ => {}
+        LogOnLine::ProtocolMessage(proto_msg) => {
+            println!("{}", prefixed_lines(&format!("{:#?}", proto_msg), "RX"));
+        }
     }
 }
 
