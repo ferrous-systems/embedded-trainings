@@ -57,6 +57,7 @@ For Linux users, your package manager may contain a package for `arm-none-eabi-g
 
 * `arm-none-eabi-gdb`
     * Arch Linux - only installs GDB
+    * Fedora: `dnf install arm-none-eabi-gdb` installs gdb and all required dependencies
 * `arm-none-eabi-gcc`
     * Some platforms, typically installs the entire suite
 * `gcc-arm-none-eabi`
