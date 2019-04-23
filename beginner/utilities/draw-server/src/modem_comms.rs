@@ -3,7 +3,7 @@ use postcard::{from_bytes, to_slice_cobs};
 use nrf52_bin_logger::LogOnLine;
 use protocol::{ModemUartMessages, CellCommand};
 use std::sync::mpsc::{Sender, Receiver, TryRecvError};
-use std::time::{Instant, Duration};
+use chrono::prelude::*;
 
 struct Modem {
     port: Box<dyn SerialPort>,
@@ -123,8 +123,6 @@ fn display(msg: &LogOnLine<ModemUartMessages>) {
         _ => {}
     }
 }
-
-use chrono::prelude::*;
 
 fn prefixed_lines(st: &str, msg: &str) -> String {
     let mut out = String::new();
