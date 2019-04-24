@@ -1,0 +1,25 @@
+[package]
+name = "segment-2"
+version = "0.1.0"
+authors = ["Ferrous Systems <contact@ferrous-systems.com>"]
+edition = "2018"
+
+[dependencies]
+panic-halt  = "0.2"
+cortex-m-rt = "0.6.5"
+cortex-m = "=0.5.8"
+heapless    = "0.4.0"
+nb = "*"
+postcard = "0.3.2"
+
+
+[dependencies.dwm1001]
+version = "0.1.1"
+features = ["dev", "rt"]
+
+[dependencies.protocol]
+path = "../../protocol"
+
+[dependencies.serde]
+version = "1.0"
+default-features = false
