@@ -53,6 +53,11 @@ Installers for all platforms may be found [via the Arm website](https://develope
 
 Once these tools are installed, they must be added to your path, if not done automatically by the installer.
 
+On MacOS `arm-none-eabi-gdb` can be installed via homebrew, for example with [homebrew-armeabi](https://github.com/eblot/homebrew-armeabi): 
+
+* Execute `brew tap eblot/armeabi`
+* Install the package with `brew install arm-none-eabi-gdb`
+
 For Linux users, your package manager may contain a package for `arm-none-eabi-gdb`, typically listed as one of the following:
 
 * `arm-none-eabi-gdb`
