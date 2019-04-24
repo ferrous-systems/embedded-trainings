@@ -37,7 +37,6 @@ This will process will install a number of tools required for this course, inclu
 Windows Users may need to install additional tools. Please refer to the [following guide](https://doc.rust-lang.org/book/ch01-01-installation.html#installing-rustup-on-windows) for installation instructions for Windows.
 
 
-
 ## The `thumbv7em-none-eabihf` target
 
 Once the **Rust Compiler and Tools** have been installed, it is necessary to download support libraries for the microcontroller architecture used for this course. This will allow us to cross compile code for our microcontroller. This step is the same for all platforms (Linux/MacOS/Windows)
