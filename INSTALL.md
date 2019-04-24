@@ -8,17 +8,18 @@ In general, development on a Linux based PC is recommended, however Windows and 
 
 In short, the following utilities must be installed:
 
-1. The Rust Compiler
-2. The `thumbv7em-none-eabihf` target, via `rustup`
-3. `arm-none-eabi-gdb` - for flashing and debugging firmware
-4. J-Link Software and Documentation Pack
-5. Git
+1. The Rust Compiler ([more...](#the-rust-compiler-and-tools))
+2. The `thumbv7em-none-eabihf` target, via `rustup` ([more...](#the-thumbv7em-none-eabihf-target))
+3. `arm-none-eabi-gdb` (or `gdb-multiarch`) - for flashing and debugging firmware ([more...](#arm-none-eabi-gdb))
+4. J-Link Software and Documentation Pack ([more...](#j-link-software-and-documentation-pack))
+5. Git ([more...](#git))
 
 The following utilities are optional:
 
 1. A serial console utility
     * Linux and MacOS users may use `screen`, or other similar included utilities
-    * Windows users may use tools such as [PuTTY](https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html).
+    * Windows users may use tools such as [PuTTY](https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html)
+    * Users with Python installed can use [pyserial's](https://pyserial.readthedocs.io/en/latest/tools.html) `miniterm` utility.
 2. A graphical frontend for GDB, particularly recommended for Windows Users, where the "TUI" mode of GDB may not be included. Examples include:
     * [gdbgui](https://gdbgui.com/) - A web browser frontend for gdb
     * The [Cortex-Debug](https://marketplace.visualstudio.com/items?itemName=marus25.cortex-debug) plugin for Microsoft VSCode
@@ -68,6 +69,8 @@ For Linux users, your package manager may contain a package for `arm-none-eabi-g
     * Some platforms, typically installs the entire suite
 * `gcc-arm-none-eabi`
     * Some platforms, typically installs the entire suite
+* `gdb-multiarch`
+    * Newer versions of Ubuntu ship a universal version of GDB called `gdb-multiarch` rather than an ARM-specific version. Install the `gdb-multiarch` package and then whenever these instructions specify the `arm-none-eabi-gdb` command, substitute the `gdb-multiarch` command instead.
 
 If you install via a package manager, please verify that gdb has been installed, and is suitably new. This can be verified by running the following command via the terminal:
 
