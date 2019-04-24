@@ -138,12 +138,20 @@ fn turns(
         prod_rqst.send(ModemUartMessages::AnnounceTurn(*player)).unwrap();
         let mut last_announce = Instant::now();
 
+        println!("");
+        println!("");
+        println!("******************************");
+        println!("* PLAYER {}, START!", player);
+        println!("******************************");
+        println!("");
+        println!("");
+
         // Restore board
         set_map(boards.get(player).unwrap(), &mut client, cell_endpoint);
 
         // Process messages for decided time
         while start_turn.elapsed() < turn_interval {
-            if last_announce.elapsed() < notify_interval {
+            if last_announce.elapsed() > notify_interval {
                 prod_rqst.send(ModemUartMessages::AnnounceTurn(*player)).unwrap();
                 last_announce = Instant::now();
             }

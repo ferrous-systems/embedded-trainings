@@ -2,7 +2,7 @@
 
 use serde::{Serialize, Deserialize};
 
-#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub enum RadioMessages {
     // Messages from clients to modem
     SetCell(Cell),
@@ -11,7 +11,7 @@ pub enum RadioMessages {
     StartTurn(u16),
 }
 
-#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub enum ModemUartMessages {
     // Messages to the host system
     SetCell(CellCommand),
@@ -24,7 +24,7 @@ pub enum ModemUartMessages {
     LoadLoopBack([u64; 16])
 }
 
-#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct Cell {
     pub row: usize,
     pub column: usize,
@@ -33,7 +33,7 @@ pub struct Cell {
     pub blue: u8,
 }
 
-#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct CellCommand {
     pub source: u16,
     pub dest: u16,
