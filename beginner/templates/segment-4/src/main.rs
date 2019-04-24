@@ -8,7 +8,9 @@ use panic_halt;
 // String formatting
 use core::fmt::Write;
 use heapless::String as HString;
+use heapless::{Vec, consts::*};
 
+use nb::block;
 
 
 // Used to set the program entry point
@@ -26,7 +28,8 @@ use dwm1001::{
 
     DWM1001,
 };
-
+use postcard::{to_vec};
+use protocol::{RadioMessages, Cell};
 
 #[entry]
 fn main() -> ! {
@@ -47,8 +50,14 @@ fn main() -> ! {
     // for more details
     let addr = mac::Address {
         pan_id: 0x0386,
-        short_addr: 0,
+        short_addr: 3,
     };
+    
+    let recipient = mac::Address {
+        pan_id: 0x0386,
+        short_addr: 0x0808,
+    };
+
 
     // Wait for the radio to become ready
     loop {
@@ -62,6 +71,34 @@ fn main() -> ! {
             }
         }
     }
+
+    // loop {
+    //     let input = dw1000.receive().unwrap();
+    // }
+
+    loop {
+        for row in 1..=16 {
+            for column in 1..=16 {
+                let redsquare = Cell {
+                    row: row,
+                    column: column,
+                    red: 100_u8,
+                    green: 0_u8,
+                    blue: 100_u8,
+                };
+
+                let message = RadioMessages::SetCell(redsquare);
+
+                let output: Vec<u8, U32> = to_vec(&message).unwrap();
+                let mut future = dw1000.send(&output, recipient, None).unwrap();
+
+                block!(future.wait()).unwrap();
+                timer.delay(200_000);
+
+            }
+        }
+    }
+
 
     // First, you'll need to build a message to send to the
     // display. Check out the `protocol` crate for message
@@ -97,3 +134,7 @@ fn main() -> ! {
         timer.delay(250_000);
     }
 }
+
+// fn purple () -> {
+//
+// }
