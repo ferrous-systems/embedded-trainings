@@ -56,11 +56,14 @@ JLinkGDBServer -device NRF52832_XXAA -if SWD -speed 4000
 
 This will launch the debugging server for our device. This window will need to stay open. This command can be run from any location.
 
+For windows users: in `.cargo/config` the - tui flag has to be removed.
+
 Back in your main terminal window, you can now run your application. For this, we will replace the `cargo build` command with a `cargo run` command. Run this command from your terminal window:
 
 ```shell
 cargo run
 ```
+
 
 ## Part 4: Debugging code
 

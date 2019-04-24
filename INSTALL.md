@@ -35,6 +35,8 @@ This will process will install a number of tools required for this course, inclu
 
 Windows Users may need to install additional tools. Please refer to the [following guide](https://doc.rust-lang.org/book/ch01-01-installation.html#installing-rustup-on-windows) for installation instructions for Windows.
 
+
+
 ## The `thumbv7em-none-eabihf` target
 
 Once the **Rust Compiler and Tools** have been installed, it is necessary to download support libraries for the microcontroller architecture used for this course. This will allow us to cross compile code for our microcontroller. This step is the same for all platforms (Linux/MacOS/Windows)
@@ -53,7 +55,7 @@ Installers for all platforms may be found [via the Arm website](https://develope
 
 Once these tools are installed, they must be added to your path, if not done automatically by the installer.
 
-On MacOS `arm-none-eabi-gdb` can be installed via homebrew, for example with [homebrew-armeabi](https://github.com/eblot/homebrew-armeabi): 
+On MacOS `arm-none-eabi-gdb` can also be installed via homebrew, for example with [homebrew-armeabi](https://github.com/eblot/homebrew-armeabi):
 
 * Execute `brew tap eblot/armeabi`
 * Install the package with `brew install arm-none-eabi-gdb`
@@ -82,6 +84,7 @@ License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
 This is free software: you are free to change and redistribute it.
 There is NO WARRANTY, to the extent permitted by law.
 ```
+For Windows users, when finishing the setup, make sure "Add path to environment variable is checked".
 
 ## J-Link Software and Documentation Pack
 
