@@ -45,7 +45,7 @@ The primary goals of this segment are to implement the following behaviors for t
 1. Initialize and configure the UARTE peripheral
 2. Send a fixed number of bytes
 3. Receive a fixed number of bytes, blocking until reception is complete
-4. Receive a maximim number of bytes in a given amount of time, returning when all bytes have been received, or the full time has elapsed
+4. Receive a maximum number of bytes in a given amount of time, returning when all bytes have been received, or the full time has elapsed
 
 As a stretch goal, students may begin sending binary serialized and encoded data over the interface, and may begin controlling their radio operation via the serial interface.
 
