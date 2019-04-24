@@ -2,7 +2,7 @@
 
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --default-toolchain stable -y
 
-printenv
+export PATH=$PATH:$HOME/.cargo/bin
 
 mkdir -p ./netlify
 
