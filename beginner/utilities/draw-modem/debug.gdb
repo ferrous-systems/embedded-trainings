@@ -1,4 +1,6 @@
 target remote :2331
-mon reset
+set backtrace limit 32
 load
-# continue
+monitor reset
+break main
+continue
