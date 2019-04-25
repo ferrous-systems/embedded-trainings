@@ -59,9 +59,9 @@ This will launch the debugging server for our device. This window will need to s
 For Windows users: in `.cargo/config` the `-tui` flag in line 6 has to be removed.
 The J-Link GDB Server has to be started with the following configuration:
 
-Connection to J-Link: USB
-Target device: NRF52832_XXAA
-Target interface: SWD
+- Connection to J-Link: USB
+- Target device: NRF52832_XXAA
+- Target interface: SWD
 
 Back in your main terminal window, you can now run your application. For this, we will replace the `cargo build` command with a `cargo run` command. Run this command from your terminal window:
 
