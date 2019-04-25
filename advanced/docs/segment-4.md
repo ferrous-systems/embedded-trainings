@@ -10,7 +10,7 @@ This segment is left open ended to allow students to explore topics that interes
 
 This segment is aimed to either allow students to continue pursuing their efforts from the previous segment, or to approach a new problem to expand your knowledge in different areas.
 
-If you areas of interest not listed here, feel free to discuss with your instructor for support, and suggestions of reasonable challenges to tackle during this segment.
+If your areas of interest are not listed here, feel free to discuss with your instructor for support, and suggestions of reasonable challenges to tackle during this segment.
 
 ## Option 1: Develop a driver for the RTC peripheral
 
