@@ -86,7 +86,7 @@ License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
 This is free software: you are free to change and redistribute it.
 There is NO WARRANTY, to the extent permitted by law.
 ```
-For Windows users, when finishing the setup, make sure "Add path to environment variable is checked".
+For Windows users, when finishing the setup, make sure "Add path to environment variable" is checked.
 
 ## J-Link Software and Documentation Pack
 
