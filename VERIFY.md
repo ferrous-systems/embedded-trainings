@@ -87,6 +87,16 @@ Could not connect to J-Link.
 Please check power, connection and settings.
 ```
 
+Windows Users
+
+Start J-Link GDB Server V6.44g with the following configuration:
+
+- Connection to J-Link: USB
+- Target device: NRF52832_XXAA
+- Target interface: SWD
+
+A window with a connection status and log shows up.
+
 ## GDB
 
 This can be verified by running the following command via the terminal:
