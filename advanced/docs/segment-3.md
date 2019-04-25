@@ -4,6 +4,11 @@ This segment pushes the students to modify their serial port to operate in a non
 
 Students will be introduced to the concept of building safe abstractions around unsafe code, and the language invariants that must be upheld to ensure memory safety and prevent compiler mis-optimizations
 
+[`nb`]: https://crates.io/crates/nb
+[`cortex-m-rtfm`]: https://crates.io/crates/cortex-m-rtfm
+[`heapless`]: https://crates.io/crates/heapless
+[`bbqueue`]: https://crates.io/crates/bbqueue
+
 ## Instructor Notes
 
 There are a number of possible ways to proceed here. In general, to perform non-blocking DMA, there are a couple important items:
