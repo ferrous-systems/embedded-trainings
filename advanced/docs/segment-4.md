@@ -6,6 +6,9 @@ This segment is left open ended to allow students to explore topics that interes
 2. Use the DWM1001-DEV as a modem, sending commands via Serial Port to control sending and receiving radio packets
 3. Implement [`embedded-hal`] traits for your serial port driver
 
+[Type State Programming]: https://rust-embedded.github.io/book/static-guarantees/typestate-programming.html
+[`embedded-hal`]: https://crates.io/crates/embedded-hal
+
 ## Instructor's Notes
 
 This segment is aimed to either allow students to continue pursuing their efforts from the previous segment, or to approach a new problem to expand your knowledge in different areas.
