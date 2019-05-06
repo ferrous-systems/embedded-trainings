@@ -145,7 +145,7 @@ impl<T> Uarte<T> where T: UarteExt {
         while self.0.events_endtx.read().bits() == 0 {}
 
         // Reset the event, otherwise it will always read `1` from now on.
-        self.0.events_endtx.write(|w| w);
+        self.0.events_endtx.reset();
 
         // Conservative compiler fence to prevent optimizations that do not
         // take in to account actions by DMA. The fence has been placed here,
@@ -283,7 +283,7 @@ impl<T> Uarte<T> where T: UarteExt {
     /// Finalize a UARTE read transaction by clearing the event
     fn finalize_read(&mut self) {
         // Reset the event, otherwise it will always read `1` from now on.
-        self.0.events_endrx.write(|w| w);
+        self.0.events_endrx.reset();
 
         // Conservative compiler fence to prevent optimizations that do not
         // take in to account actions by DMA. The fence has been placed here,
