@@ -2,14 +2,13 @@
 
 ## Templates
 
-There are three templates for this course:
+There are two templates for this course:
 
 * `beginner/templates/segment-1`
-    * This is used for segments 1 and 2
-* `beginner/templates/segment-3`
-    * This is used as the basis for segment 3
-* `beginner/templates/segment-4`
-    * This is used as the basis for segment 4
+    * This is used for segment 1
+* `beginner/templates/segment-2`
+    * This is used as the basis for segment 2
+
 
 Each template should compile as-is, and should serve as a basis for the exercise. You should encourage the participants to look at the documentation provided by `cargo doc --open` to find the tools that they will need to solve each exercise.
 
@@ -49,4 +48,3 @@ This has two purposes:
 
 1. To validate the end-to-end behavior of the workshop software
 2. To serve as a working example for the instructor, in case they need a reference for the training.
-

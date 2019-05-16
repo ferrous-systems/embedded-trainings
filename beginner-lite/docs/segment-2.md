@@ -1,4 +1,4 @@
-# Segment 3 detailed instructions
+# Segment 2 detailed instructions
 
 This segment starts the interactive portion of the class. A color grid will be displayed on the presenter's projector screen, and each student will be given a portion of the total grid that they may remotely control.
 
