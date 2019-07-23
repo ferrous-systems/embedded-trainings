@@ -73,8 +73,8 @@ fn main() -> ! {
 
     let mut toggle = false;
     loop {
-        for row in 1..=8 {
-            for column in 1..=8 {
+        for row in 0..8 {
+            for column in 0..8 {
                 let redsquare = Cell {
                     row: row,
                     column: column,
@@ -101,7 +101,7 @@ fn main() -> ! {
 
                     toggle = !toggle;
 
-            
+
                 }
 
                 let message = RadioMessages::SetCell(redsquare);
