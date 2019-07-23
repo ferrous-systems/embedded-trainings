@@ -285,6 +285,21 @@ fn process_message(logger: &mut ModemLogger, msg: &Message) -> Result<ModemUartM
                     cell: sc
                 }));
             }
+            // RadioMessages::SetGrid(sg) => {
+            //     return Ok(ModemUartMessages::SetCell(GridCommand {
+            //         source: msg.frame.header.source.short_addr,
+            //         dest: msg.frame.header.destination.short_addr,
+            //         grid: sg
+            //     }));
+            // }
+            // RadioMessages::SetLine(sl) => {
+            //     return Ok(ModemUartMessages::SetCell(LineCommand {
+            //         source: msg.frame.header.source.short_addr,
+            //         dest: msg.frame.header.destination.short_addr,
+            //         line: sl
+            //     }));
+            //
+            // }
             RadioMessages::StartTurn(_) => {
                 logger.warn("ClientMSGS_PER_SEC tried to annouce turn!").unwrap();
             }

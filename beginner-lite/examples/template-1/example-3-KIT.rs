@@ -30,8 +30,10 @@ fn main() -> ! {
 
     let mut toggle = false;
 
+    //Array of all the LEDs. The array and the LEDs need to be mutable references.
     let mut ledarray = &mut [&mut board.leds.D9, &mut board.leds.D12, &mut board.leds.D11, &mut board.leds.D10];
 
+    //Array for each animation phase, use 1 and 0 or true or false for on and off.
     let phase_0 = [0, 0, 0, 0];
     let phase_1 = [1, 0, 0, 0];
     let phase_2 = [1, 1, 0, 0];
@@ -42,6 +44,7 @@ fn main() -> ! {
     let phase_7 = [0, 0, 0, 1];
     let phase_8 = [0, 0, 0, 0];
 
+    //Array of all phases. The array needs to be a reference.
     let phases = &[phase_0, phase_1, phase_2, phase_3, phase_4, phase_5, phase_6, phase_7, phase_8, phase_7, phase_6, phase_5, phase_4, phase_3, phase_2, phase_1];
 
 
@@ -50,7 +53,7 @@ fn main() -> ! {
         write!(&mut s, "Blink!\r\n").unwrap();
         board.uart.write(s.as_bytes()).unwrap();
 
-        // board.leds.D9  - Top LED BLUE
+        // board.leds.D9  - Top LED GREEN
         // board.leds.D12 - Top LED RED
         // board.leds.D11 - Bottom LED RED
         // board.leds.D10 - Bottom LED BLUE

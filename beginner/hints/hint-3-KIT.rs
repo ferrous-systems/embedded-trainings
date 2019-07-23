@@ -50,11 +50,6 @@ fn main() -> ! {
         write!(&mut s, "Blink!\r\n").unwrap();
         board.uart.write(s.as_bytes()).unwrap();
 
-        // board.leds.D9  - Top LED BLUE
-        // board.leds.D12 - Top LED RED
-        // board.leds.D11 - Bottom LED RED
-        // board.leds.D10 - Bottom LED BLUE
-
         for phase in phases {
 
             for (i, led) in ledarray.iter_mut().enumerate() {
@@ -67,8 +62,6 @@ fn main() -> ! {
             }
 
         timer.delay(100_000);
-
-
         }
 
         timer.delay(300_000);

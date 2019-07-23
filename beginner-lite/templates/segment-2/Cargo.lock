@@ -284,7 +284,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "segment-3"
+name = "segment-2"
 version = "0.1.0"
 dependencies = [
  "cortex-m-rt 0.6.8 (registry+https://github.com/rust-lang/crates.io-index)",

@@ -71,7 +71,7 @@ fn main() -> ! {
     }
 
 
-
+    let mut toggle = false;
     loop {
         for row in 1..=8 {
             for column in 1..=8 {
@@ -82,6 +82,27 @@ fn main() -> ! {
                     green: 0_u8,
                     blue: 200_u8,
                 };
+
+
+                loop {
+                    s.clear();
+                    write!(&mut s, "Blink!\r\n").unwrap();
+                    board.uart.write(s.as_bytes()).unwrap();
+
+                    // board.leds.D9  - Top LED BLUE
+                    // board.leds.D12 - Top LED RED
+                    // board.leds.D11 - Bottom LED RED
+                    // board.leds.D10 - Bottom LED BLUE
+                    if toggle {
+                        board.leds.D10.enable();
+                    } else {
+                        board.leds.D10.disable();
+                    }
+
+                    toggle = !toggle;
+
+            
+                }
 
                 let message = RadioMessages::SetCell(redsquare);
 
@@ -106,25 +127,5 @@ fn main() -> ! {
     // until you can send another one. If you send messages faster
     // than 64 messages/second, the display will reject your requests!
 
-    let mut toggle = false;
 
-    loop {
-        s.clear();
-        write!(&mut s, "Blink!\r\n").unwrap();
-        board.uart.write(s.as_bytes()).unwrap();
-
-        // board.leds.D9  - Top LED BLUE
-        // board.leds.D12 - Top LED RED
-        // board.leds.D11 - Bottom LED RED
-        // board.leds.D10 - Bottom LED BLUE
-        if toggle {
-            board.leds.D10.enable();
-        } else {
-            board.leds.D10.disable();
-        }
-
-        toggle = !toggle;
-
-        timer.delay(250_000);
-    }
 }
