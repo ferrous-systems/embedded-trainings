@@ -39,6 +39,7 @@ pub struct SquaresConfig {
     port: u16,
 }
 
+
 #[derive(Deserialize, Debug)]
 pub struct Segment {
     pub x: RangeInclusive<usize>,

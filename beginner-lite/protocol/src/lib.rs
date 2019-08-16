@@ -13,11 +13,13 @@ pub enum RadioMessages {
     StartTurn(u16),
 }
 
+
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub enum ModemUartMessages {
     // Messages to the host system
     SetCell(CellCommand),
-
+    SetGrid(GridCommand),
+    SetLine(LineCommand),
     // Commands to the embedded device
     Loopback(u32),
     AnnounceTurn(u16),
@@ -26,7 +28,7 @@ pub enum ModemUartMessages {
     LoadLoopBack([u64; 16])
 }
 
-#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone, Copy)]
 pub struct Cell {
     pub row: usize,
     pub column: usize,
@@ -42,10 +44,10 @@ pub struct RGB {
     pub blue: u8,
 }
 
-#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone, Copy)]
 pub struct Line {
-    pub row: i32,
-    pub column: i32,
+    pub row: usize,
+    pub column: usize,
     pub red: u8,
     pub green: u8,
     pub blue: u8,
@@ -53,28 +55,28 @@ pub struct Line {
     pub length: i32,
 }
 
-#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone, Copy)]
 pub struct ApiGrid {
-    pub zero_row: i32,
-    pub zero_column: i32,
-    pub api_grid: [[RGB; 8]; 8],
+    pub zero_row: usize,
+    pub zero_column: usize,
+    pub grid: [[RGB; 8]; 8],
 }
 
-#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone, Copy)]
 pub struct CellCommand {
     pub source: u16,
     pub dest: u16,
     pub cell: Cell,
 }
 
-#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone, Copy)]
 pub struct GridCommand {
     pub source: u16,
     pub dest: u16,
     pub grid: ApiGrid,
 }
 
-#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone, Copy)]
 pub struct LineCommand {
     pub source: u16,
     pub dest: u16,

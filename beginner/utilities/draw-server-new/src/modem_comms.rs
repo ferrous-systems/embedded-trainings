@@ -1,7 +1,7 @@
 use serialport::prelude::*;
 use postcard::{from_bytes, to_slice_cobs};
 use nrf52_bin_logger::LogOnLine;
-use protocol::{ModemUartMessages, CellCommand};
+use protocol::{ModemUartMessages};
 use std::sync::mpsc::{Sender, Receiver, TryRecvError};
 use chrono::prelude::*;
 
@@ -12,7 +12,7 @@ struct Modem {
 }
 
 impl Modem {
-    fn process_serial(&mut self) -> Result<Vec<CellCommand>, ()> {
+    fn process_serial(&mut self) -> Result<Vec<ModemUartMessages>, ()> {
         let mut buf = [0u8; 1024];
         let buf = match self.port.read(&mut buf) {
             Ok(ct) => &buf[..ct],
@@ -26,7 +26,7 @@ impl Modem {
         self.push_bytes(buf)
     }
 
-    fn push_bytes(&mut self, mut data: &[u8]) -> Result<Vec<CellCommand>, ()> {
+    fn push_bytes(&mut self, mut data: &[u8]) -> Result<Vec<ModemUartMessages>, ()> {
         let mut resps = vec![];
 
         while let Some(idx) = data.iter().position(|&b| b == 0) {
@@ -41,13 +41,13 @@ impl Modem {
                     display(&msg);
                 }
                 match decode_result {
-                    Ok(ProtocolMessage(SetCell(desmsg))) =>  {
-                        self.since_last_err += 1;
-                        resps.push(desmsg);
-                    }
                     Ok(ProtocolMessage(Loopback(val))) =>  {
                         self.since_last_err += 1;
                         eprintln!("Got Loopback! Good: {}", val == 0x4242_4242);
+                    }
+                    Ok(ProtocolMessage(modem_uart_messages)) =>  {
+                        self.since_last_err += 1;
+                        resps.push(modem_uart_messages);
                     }
                     Ok(_other) => {
                         self.since_last_err += 1;
@@ -74,7 +74,7 @@ impl Modem {
 
 pub fn modem_task(
     port: Box<dyn SerialPort>,
-    prod_cmds: Sender<CellCommand>,
+    prod_cmds: Sender<ModemUartMessages>,
     cons_rqst: Receiver<ModemUartMessages>,
 ) -> Result<(), ()>
 {

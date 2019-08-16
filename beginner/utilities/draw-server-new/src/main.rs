@@ -7,7 +7,9 @@ use std::thread::{spawn};
 
 use modem_comms::modem_task;
 use board_mgr::board_mgr_task;
-use protocol::{CellCommand, ModemUartMessages};
+use protocol::{
+    ModemUartMessages,
+};
 
 use serde::de::DeserializeOwned;
 use serde::Deserialize;
@@ -37,7 +39,13 @@ fn main() {
     settings.timeout = Duration::from_millis(config.serial.timeout_ms);
     settings.baud_rate = config.serial.baudrate;
 
-    let (prod_cmds, cons_cmds) = channel::<CellCommand>();
+    //NEW PSEUDO CODE
+
+
+    println!("hello");
+    let (prod_cmds, cons_cmds) = channel::<ModemUartMessages>();
+
+
     let (prod_rqst, cons_rqst) = channel::<ModemUartMessages>();
 
     let port = match serialport::open_with_settings(&config.serial.port, &settings) {

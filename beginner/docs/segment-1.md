@@ -83,6 +83,7 @@ Once you have run `cargo run`, you will be placed in a debugging session of `gdb
 * `p $data` or `print $data` - Print the value contained by the variable `$data`.
 * `monitor reset`: Reset the CPU, starting execution over again
 
+
 ## Part 5: Modify Code
 
 The example code blinks a single LED at a fixed rate. Try blinking other LEDs on the board, and changing the interval at which the LEDs blink. In the next segment, we'll work on making a more complex pattern with the LEDs.
