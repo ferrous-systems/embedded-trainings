@@ -27,6 +27,8 @@ fn main() -> ! {
     let mut _rng   = board.RNG.constrain();
 
     let mut s: HString<heapless::consts::U1024> = HString::new();
+
+
     let mut toggle = false;
 
     loop {
@@ -38,13 +40,15 @@ fn main() -> ! {
         // board.leds.D12 - Top LED RED
         // board.leds.D11 - Bottom LED RED
         // board.leds.D10 - Bottom LED BLUE
-        if toggle {
-            board.leds.D10.enable();
-        } else {
-            board.leds.D10.disable();
-        }
 
-        toggle = !toggle;
-        timer.delay(250_000);
+        //Array of all the LEDs. The array and the LEDs need to be mutable references.
+        let mut ledarray = &mut [&mut board.leds.D9, &mut board.leds.D12, &mut board.leds.D11, &mut board.leds.D10];
+
+        for led in ledarray {
+            led.enable();
+            timer.delay(250_000);
+            led.disable();
+
+        }
     }
 }

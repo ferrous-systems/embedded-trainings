@@ -27,6 +27,8 @@ fn main() -> ! {
     let mut _rng   = board.RNG.constrain();
 
     let mut s: HString<heapless::consts::U1024> = HString::new();
+
+
     let mut toggle = false;
 
     loop {
@@ -38,13 +40,21 @@ fn main() -> ! {
         // board.leds.D12 - Top LED RED
         // board.leds.D11 - Bottom LED RED
         // board.leds.D10 - Bottom LED BLUE
+        
         if toggle {
-            board.leds.D10.enable();
-        } else {
+            board.leds.D9.enable();
+            board.leds.D11.enable();
             board.leds.D10.disable();
+            board.leds.D12.disable();
+        } else {
+            board.leds.D9.disable();
+            board.leds.D11.disable();
+            board.leds.D10.enable();
+            board.leds.D12.enable();
         }
 
         toggle = !toggle;
+
         timer.delay(250_000);
     }
 }

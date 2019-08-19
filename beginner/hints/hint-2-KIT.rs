@@ -27,24 +27,24 @@ fn main() -> ! {
     let mut _rng   = board.RNG.constrain();
 
     let mut s: HString<heapless::consts::U1024> = HString::new();
+
     let mut toggle = false;
+
+    //Make an array of all the LEDs. The array and the LEDs need to be mutable references.
+    //Make an array for each animation phase, use 1 and 0 or true or false for on and off.
+    //Make an array of all phases. The array needs to be a reference.
+
 
     loop {
         s.clear();
         write!(&mut s, "Blink!\r\n").unwrap();
         board.uart.write(s.as_bytes()).unwrap();
 
-        // board.leds.D9  - Top LED GREEN
-        // board.leds.D12 - Top LED RED
-        // board.leds.D11 - Bottom LED RED
-        // board.leds.D10 - Bottom LED BLUE
-        if toggle {
-            board.leds.D10.enable();
-        } else {
-            board.leds.D10.disable();
-        }
 
-        toggle = !toggle;
+        //Iterate through the phases, and apply the phases to the LEDs.
+        //Use the methods iter_mut() and enumerate().
+
+
         timer.delay(250_000);
     }
 }

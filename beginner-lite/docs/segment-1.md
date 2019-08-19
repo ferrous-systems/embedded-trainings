@@ -118,4 +118,4 @@ pattern
 #...     V
 ```
 
-You may consider pausing at the end of each side of the LEDs, or varying the speed or acceleration of the LED pattern.
+You may consider pausing at the end of each side of the LEDs, or varying the speed or acceleration of the LED pattern. To guide you trough this, we provided hints in the hints folder. 
