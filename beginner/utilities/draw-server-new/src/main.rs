@@ -42,9 +42,8 @@ fn main() {
     //NEW PSEUDO CODE
 
 
-    println!("hello");
-    let (prod_cmds, cons_cmds) = channel::<ModemUartMessages>();
 
+    let (prod_cmds, cons_cmds) = channel::<ModemUartMessages>();
 
     let (prod_rqst, cons_rqst) = channel::<ModemUartMessages>();
 

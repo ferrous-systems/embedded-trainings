@@ -277,7 +277,6 @@ fn process_message(logger: &mut ModemLogger, msg: &Message) -> Result<ModemUartM
     }
 
     if let Ok(pmsg) = from_bytes::<RadioMessages>(msg.frame.payload) {
-        println!("!");
         match pmsg {
             RadioMessages::SetCell(sc) => {
                 return Ok(ModemUartMessages::SetCell(CellCommand {

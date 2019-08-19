@@ -67,14 +67,6 @@ fn drawing(
                 }
             }?;
 
-            // let msg = match cons_cmds.recv_timeout(Duration::from_millis(100)) {
-            //     Ok(msg) => Ok(msg),
-            //     Err(RecvTimeoutError::Timeout) => continue,
-            //     Err(e) => {
-            //         eprintln!("cons_cmds receive error! {:?}", e);
-            //         Err(())
-            //     }
-            // }.unwrap();
 
             match msg {
                 ModemUartMessages::SetCell(cell_message) => {
@@ -533,7 +525,6 @@ pub fn find_endpoint_type (cons_cmds: &Receiver<ModemUartMessages>) -> String {
             Err(())
         }
     }.unwrap();
-
     match msg {
         ModemUartMessages::SetCell(_cc) => {
             let endpoint_type = "cell";

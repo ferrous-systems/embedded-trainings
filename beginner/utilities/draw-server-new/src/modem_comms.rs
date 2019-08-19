@@ -45,9 +45,17 @@ impl Modem {
                         self.since_last_err += 1;
                         eprintln!("Got Loopback! Good: {}", val == 0x4242_4242);
                     }
-                    Ok(ProtocolMessage(modem_uart_messages)) =>  {
+                    Ok(ProtocolMessage(SetCell(cell))) =>  {
                         self.since_last_err += 1;
-                        resps.push(modem_uart_messages);
+                        resps.push(ModemUartMessages::SetCell(cell));
+                    }
+                    Ok(ProtocolMessage(SetLine(line))) =>  {
+                        self.since_last_err += 1;
+                        resps.push(ModemUartMessages::SetLine(line));
+                    }
+                    Ok(ProtocolMessage(SetGrid(grid))) =>  {
+                        self.since_last_err += 1;
+                        resps.push(ModemUartMessages::SetGrid(grid));
                     }
                     Ok(_other) => {
                         self.since_last_err += 1;

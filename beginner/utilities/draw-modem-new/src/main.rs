@@ -290,7 +290,6 @@ fn process_message(logger: &mut ModemLogger, msg: &Message) -> Result<ModemUartM
                     dest: msg.frame.header.destination.short_addr,
                     cell: sc
                 }));
-                logger.warn("setCell").unwrap();
             }
             RadioMessages::SetGrid(sg) => {
                 return Ok(ModemUartMessages::SetGrid(GridCommand {
