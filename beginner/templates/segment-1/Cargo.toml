@@ -6,11 +6,11 @@ edition = "2018"
 
 [dependencies]
 panic-halt  = "0.2"
-cortex-m-rt = "0.6.5"
-cortex-m = "=0.5.8"
+cortex-m-rt = "0.6.10"
+cortex-m    = "=0.5.8"
 heapless    = "0.4.0"
-nb = "*"
-postcard = "0.3.2"
+nb          = "*"
+postcard    = "0.3.2"
 
 
 [dependencies.dwm1001]

@@ -6,11 +6,11 @@ edition = "2018"
 
 [dependencies]
 serialport = "3.2.0"
-cobs = "0.1.4"
-chrono = "0.4"
-reqwest = "0.9"
-rand = "0.6"
-ron = "0.5"
+cobs       = "0.1.4"
+chrono     = "0.4"
+reqwest    = "0.9"
+rand       = "0.6"
+ron        = "0.5"
 
 [dependencies.postcard]
 version = "0.3.2"
