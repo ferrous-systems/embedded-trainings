@@ -2,7 +2,7 @@
     serial: (
         timeout_ms: 100,
         baudrate: 115_200,
-        port: "/dev/tty.usbmodem0007600866611"",
+        port: "/dev/tty.usbmodem0007600866611",
     ),
     squares: (
         host: "http://localhost",
