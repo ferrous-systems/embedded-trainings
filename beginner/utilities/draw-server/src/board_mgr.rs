@@ -4,7 +4,7 @@ use reqwest;
 use std::collections::hash_map::HashMap;
 use std::ops::RangeInclusive;
 
-use protocol::{CellCommand, Cell, ModemUartMessages};
+use protocol::{Line, Cell, ApiGrid, ModemUartMessages};
 use rand::Rng;
 
 use serde::Deserialize;
@@ -39,7 +39,6 @@ pub struct SquaresConfig {
     port: u16,
 }
 
-
 #[derive(Deserialize, Debug)]
 pub struct Segment {
     pub x: RangeInclusive<usize>,
@@ -48,8 +47,8 @@ pub struct Segment {
 
 fn drawing(
     mut client: reqwest::Client,
-    cell_endpoint: &str,
-    cons_cmds: Receiver<CellCommand>,
+    endpoint: &str,
+    cons_cmds: Receiver<ModemUartMessages>,
     board: &Segment,
     clear_interval: Duration,
     parts: Option<&Partitions>,
@@ -68,27 +67,77 @@ fn drawing(
                 }
             }?;
 
-            if let Ok((x, y)) = validate_and_remap(board, parts, &msg) {
-                let req = client
-                    .post(cell_endpoint)
-                    .json(&Cell {
-                        column: x,
-                        row: y,
-                        .. msg.cell
-                    })
-                    .send();
 
-                if let Err(e) = req {
-                    eprintln!("post_err: {:?}", e);
+            match msg {
+                ModemUartMessages::SetCell(cell_message) => {
+
+                    if let Ok((x, y)) = validate_and_remap(board, parts, &msg) {
+
+
+                        let req = client
+                            .post(endpoint)
+                            .json(&Cell {
+                                column: x,
+                                row: y,
+                                .. cell_message.cell
+                            })
+                            .send();
+
+                        if let Err(e) = req {
+                            eprintln!("post_err: {:?}", e);
+                        }
+                    } else {
+                        eprintln!("Out of range: {:?}", msg);
+                    }
+
                 }
-            } else {
-                eprintln!("Out of range: {:?}", msg);
+                ModemUartMessages::SetLine(line_message) => {
+
+                    if let Ok((x, y)) = validate_and_remap(board, parts, &msg) {
+
+
+                        let req = client
+                            .post(endpoint)
+                            .json(&Line {
+                                column: x,
+                                row: y,
+                                .. line_message.line
+                            })
+                            .send();
+
+                        if let Err(e) = req {
+                            eprintln!("post_err: {:?}", e);
+                        }
+                    } else {
+                        eprintln!("Out of range: {:?}", msg);
+                    }
+
+                }
+                ModemUartMessages::SetGrid(grid_message) => {
+
+                    if let Ok((x, y)) = validate_and_remap(board, parts, &msg) {
+
+                        let req = client
+                            .post(endpoint)
+                            .json(&ApiGrid {
+                                zero_column: x,
+                                zero_row: y,
+                                .. grid_message.grid
+                            })
+                            .send();
+
+                        if let Err(e) = req {
+                            eprintln!("post_err: {:?}", e);
+                        }
+                    } else {
+                        eprintln!("Out of range: {:?}", msg);
+                    }
+                }
+                _ => continue
             }
-
-
         }
 
-        clear_map(*board.x.end(), *board.y.end(), &mut client, cell_endpoint);
+        clear_map(*board.x.end(), *board.y.end(), &mut client, endpoint);
         last_start = Instant::now();
     }
 }
@@ -98,13 +147,13 @@ struct Color {
     green: u8,
     blue: u8,
 }
-
+//not yet adapted
 fn turns(
     players: &Vec<u16>,
     board: &Segment,
     mut client: reqwest::Client,
-    cell_endpoint: &str,
-    cons_cmds: Receiver<CellCommand>,
+    endpoint: &str,
+    cons_cmds: Receiver<ModemUartMessages>,
     prod_rqst: Sender<ModemUartMessages>,
     turn_interval: Duration,
     notify_interval: Duration,
@@ -147,6 +196,7 @@ fn turns(
         println!("");
 
         // Restore board
+        let cell_endpoint = "cell";
         set_map(boards.get(player).unwrap(), &mut client, cell_endpoint);
 
         // Process messages for decided time
@@ -165,30 +215,89 @@ fn turns(
                 }
             }.unwrap();
 
-            if msg.source != *player {
-                eprintln!("Player {} sent out of turn!", msg.source);
-                continue;
-            }
+            match msg {
+                ModemUartMessages::SetCell(cell_message) => {
+                    if cell_message.source != *player {
+                        eprintln!("Player {} sent out of turn!", cell_message.source);
+                        continue;
+                    }
 
-            if let Ok((x, y)) = validate_and_remap(board, None, &msg) {
-                // We know that the range is valid for the board
-                boards.get_mut(player).unwrap()[y-1][x-1] = Color { red: msg.cell.red, green: msg.cell.green, blue: msg.cell.blue };
+                    if let Ok((x, y)) = validate_and_remap(board, None, &msg) {
+                        boards.get_mut(player).unwrap()[y-1][x-1] = Color { red: cell_message.cell.red, green: cell_message.cell.green, blue: cell_message.cell.blue };
 
-                let req = client
-                    .post(cell_endpoint)
-                    .json(&Cell {
-                        column: x,
-                        row: y,
-                        .. msg.cell
-                    })
-                    .send();
+                        let req = client
+                            .post(endpoint)
+                            .json(&Cell {
+                                column: x,
+                                row: y,
+                                .. cell_message.cell
+                            })
+                            .send();
 
-                if let Err(e) = req {
-                    eprintln!("post_err: {:?}", e);
+                        if let Err(e) = req {
+                            eprintln!("post_err: {:?}", e);
+                        }
+                    } else {
+                        eprintln!("Out of range: {:?}", msg);
+                    }
+
                 }
-            } else {
-                eprintln!("Out of range: {:?}", msg);
+                ModemUartMessages::SetLine(line_message) => {
+                    if line_message.source != *player {
+                        eprintln!("Player {} sent out of turn!", line_message.source);
+                        continue;
+                    }
+
+                    if let Ok((x, y)) = validate_and_remap(board, None, &msg) {
+                        //boards.get_mut(player).unwrap()[y-1][x-1] = Color { red: line_message.line.red, green: line_message.line.green, blue: line_message.line.blue };
+
+                        let req = client
+                            .post(endpoint)
+                            .json(&Line {
+                                column: x,
+                                row: y,
+                                .. line_message.line
+                            })
+                            .send();
+
+                        if let Err(e) = req {
+                            eprintln!("post_err: {:?}", e);
+                        }
+                    } else {
+                        eprintln!("Out of range: {:?}", msg);
+                    }
+
+                }
+                ModemUartMessages::SetGrid(grid_message) => {
+                    if grid_message.source != *player {
+                        eprintln!("Player {} sent out of turn!", grid_message.source);
+                        continue;
+                    }
+
+                    if let Ok((x, y)) = validate_and_remap(board, None, &msg) {
+
+                        //what does this line do?
+                        //boards.get_mut(player).unwrap()[y-1][x-1] = Color { red: grid_message.grid.red, green: grid_message.grid.green, blue: grid_message.grid.blue };
+
+                        let req = client
+                            .post(endpoint)
+                            .json(&ApiGrid {
+                                zero_column: x,
+                                zero_row: y,
+                                .. grid_message.grid
+                            })
+                            .send();
+
+                        if let Err(e) = req {
+                            eprintln!("post_err: {:?}", e);
+                        }
+                    } else {
+                        eprintln!("Out of range: {:?}", msg);
+                    }
+                }
+                _ => continue
             }
+
         }
     }
 
@@ -251,19 +360,24 @@ fn clear_map(x_max: usize, y_max: usize, client: &mut reqwest::Client, cell_endp
 pub fn board_mgr_task(
     cfg_sq: &SquaresConfig,
     cfg_bd: &BoardManagerConfig,
-    cons_cmds: Receiver<CellCommand>,
+    cons_cmds: Receiver<ModemUartMessages>,
     prod_rqst: Sender<ModemUartMessages>,
 ) -> Result<(), ()>
 {
+
+    let endpoint_type = find_endpoint_type(&cons_cmds);
+
     let client = reqwest::Client::new();
-    let cell_endpoint: &str = &format!("{}:{}/cell", cfg_sq.host, cfg_sq.port);
+    let endpoint: &str = &format!("{}:{}/{}", cfg_sq.host, cfg_sq.port, endpoint_type);
+    println!("{}", &endpoint);
+
 
     use BoardMode::*;
     match cfg_bd.mode {
         FreeDraw { clear_interval } => {
             drawing(
                 client,
-                cell_endpoint,
+                endpoint,
                 cons_cmds,
                 &cfg_bd.total_board,
                 clear_interval,
@@ -273,7 +387,7 @@ pub fn board_mgr_task(
         Partitioned { clear_interval, ref partitions } => {
             drawing(
                 client,
-                cell_endpoint,
+                endpoint,
                 cons_cmds,
                 &cfg_bd.total_board,
                 clear_interval,
@@ -285,7 +399,7 @@ pub fn board_mgr_task(
                 players,
                 &cfg_bd.total_board,
                 client,
-                cell_endpoint,
+                endpoint,
                 cons_cmds,
                 prod_rqst,
                 turn_interval,
@@ -295,35 +409,135 @@ pub fn board_mgr_task(
     }
 }
 
-fn validate_and_remap(board: &Segment, partitions: Option<&Partitions>, msg: &CellCommand) -> Result<(usize, usize), ()> {
-    if let Some(parts) = partitions {
-        if let Some(part) = parts.get(&msg.source) {
-            let xrange = part.x.end() - part.x.start();
-            let yrange = part.y.end() - part.y.start();
+fn validate_and_remap(board: &Segment, partitions: Option<&Partitions>, msg: &ModemUartMessages) -> Result<(usize, usize), ()> {
 
-            if (msg.cell.column >= 1) &&
-               (msg.cell.column <= (1 + xrange)) &&
-               (msg.cell.row >= 1) &&
-               (msg.cell.row <= (1 + yrange)) {
-                Ok((
-                    msg.cell.column - 1 + part.x.start(),
-                    msg.cell.row    - 1 + part.y.start()
-                ))
+    match msg {
+        ModemUartMessages::SetCell(cell_message) => {
+            if let Some(parts) = partitions {
+                if let Some(part) = parts.get(&cell_message.source) {
+                    let xrange = part.x.end() - part.x.start();
+                    let yrange = part.y.end() - part.y.start();
+
+                    if (cell_message.cell.column >= 1) &&
+                       (cell_message.cell.column <= (1 + xrange)) &&
+                       (cell_message.cell.row >= 1) &&
+                       (cell_message.cell.row <= (1 + yrange)) {
+                        Ok((
+                            cell_message.cell.column - 1 + part.x.start(),
+                            cell_message.cell.row    - 1 + part.y.start()
+                        ))
+                    } else {
+                        Err(())
+                    }
+                } else {
+                    Err(())
+                }
             } else {
-                Err(())
-            }
-        } else {
-            Err(())
-        }
-    } else {
-        if (board.x.start() <= &msg.cell.column) &&
-           (board.x.end() >= &msg.cell.column) &&
-           (board.y.start() <= &msg.cell.row) &&
-           (board.y.end() >= &msg.cell.row) {
-            Ok((msg.cell.column, msg.cell.row))
-        } else {
-            Err(())
-        }
+                if (board.x.start() <= &cell_message.cell.column) &&
+                   (board.x.end() >= &cell_message.cell.column) &&
+                   (board.y.start() <= &cell_message.cell.row) &&
+                   (board.y.end() >= &cell_message.cell.row) {
+                    Ok((cell_message.cell.column, cell_message.cell.row))
+                } else {
+                    Err(())
+                }
 
+            }
+
+
+        }
+        ModemUartMessages::SetLine(line_message) => {
+            if let Some(parts) = partitions {
+                if let Some(part) = parts.get(&line_message.source) {
+                    let xrange = part.x.end() - part.x.start();
+                    let yrange = part.y.end() - part.y.start();
+
+                    if (line_message.line.column >= 1) &&
+                       (line_message.line.column <= (1 + xrange)) &&
+                       (line_message.line.row >= 1) &&
+                       (line_message.line.row <= (1 + yrange)) {
+                        Ok((
+                            line_message.line.column - 1 + part.x.start(),
+                            line_message.line.row   - 1 + part.y.start()
+                        ))
+                    } else {
+                        Err(())
+                    }
+                } else {
+                    Err(())
+                }
+            } else {
+                if (board.x.start() <= &line_message.line.column) &&
+                   (board.x.end() >= &line_message.line.column) &&
+                   (board.y.start() <= &line_message.line.row) &&
+                   (board.y.end() >= &line_message.line.row) {
+                    Ok((line_message.line.column, line_message.line.row))
+                } else {
+                    Err(())
+                }
+
+            }
+
+        }
+        ModemUartMessages::SetGrid(grid_message) => {
+            if let Some(parts) = partitions {
+                if let Some(part) = parts.get(&grid_message.source) {
+                    let xrange = part.x.end() - part.x.start();
+                    let yrange = part.y.end() - part.y.start();
+
+                    if (grid_message.grid.zero_column >= 1) &&
+                       (grid_message.grid.zero_column <= (1 + xrange)) &&
+                       (grid_message.grid.zero_row>= 1) &&
+                       (grid_message.grid.zero_row <= (1 + yrange)) {
+                        Ok((
+                            grid_message.grid.zero_column - 1 + part.x.start(),
+                            grid_message.grid.zero_row    - 1 + part.y.start()
+                        ))
+                    } else {
+                        Err(())
+                    }
+                } else {
+                    Err(())
+                }
+            } else {
+                if (board.x.start() <= &grid_message.grid.zero_column) &&
+                   (board.x.end() >= &grid_message.grid.zero_column) &&
+                   (board.y.start() <= &grid_message.grid.zero_row) &&
+                   (board.y.end() >= &grid_message.grid.zero_row) {
+                    Ok((grid_message.grid.zero_column, grid_message.grid.zero_row))
+                } else {
+                    Err(())
+                }
+
+            }
+        }
+        _ => Ok((0,0))
+    }
+
+}
+
+pub fn find_endpoint_type (cons_cmds: &Receiver<ModemUartMessages>) -> String {
+
+    let msg = match cons_cmds.recv() {
+        Ok(msg) => Ok(msg),
+        Err(e) => {
+            eprintln!("cons_cmds receive error! {:?}", e);
+            Err(())
+        }
+    }.unwrap();
+    match msg {
+        ModemUartMessages::SetCell(_cc) => {
+            let endpoint_type = "cell";
+            endpoint_type.to_string()
+        }
+        ModemUartMessages::SetLine(_lc) => {
+            let endpoint_type = "line";
+            endpoint_type.to_string()
+        }
+        ModemUartMessages::SetGrid(_gc) => {
+            let endpoint_type = "grid";
+            endpoint_type.to_string()
+        }
+        _ => " ".to_string()
     }
 }

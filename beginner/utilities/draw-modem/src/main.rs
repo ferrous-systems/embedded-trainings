@@ -44,8 +44,13 @@ use panic_ramdump as _;
 use protocol::{
     ModemUartMessages,
     CellCommand,
+    LineCommand,
+    GridCommand,
     RadioMessages,
+
 };
+
+
 use nrf52_bin_logger::{
     Logger,
     senders::RealSender,
@@ -152,6 +157,7 @@ const APP: () = {
 
         resources.LOGGER.start_receive().unwrap();
         resources.TIMER_2.start(250_000u32);
+        resources.LOGGER.warn("Idle!").unwrap();
 
         loop {
             // Process incoming messages
@@ -284,6 +290,21 @@ fn process_message(logger: &mut ModemLogger, msg: &Message) -> Result<ModemUartM
                     dest: msg.frame.header.destination.short_addr,
                     cell: sc
                 }));
+            }
+            RadioMessages::SetGrid(sg) => {
+                return Ok(ModemUartMessages::SetGrid(GridCommand {
+                    source: msg.frame.header.source.short_addr,
+                    dest: msg.frame.header.destination.short_addr,
+                    grid: sg
+                }));
+            }
+            RadioMessages::SetLine(sl) => {
+                return Ok(ModemUartMessages::SetLine(LineCommand {
+                    source: msg.frame.header.source.short_addr,
+                    dest: msg.frame.header.destination.short_addr,
+                    line: sl
+                }));
+
             }
             RadioMessages::StartTurn(_) => {
                 logger.warn("ClientMSGS_PER_SEC tried to annouce turn!").unwrap();
