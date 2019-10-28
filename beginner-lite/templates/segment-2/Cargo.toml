@@ -7,14 +7,14 @@ edition = "2018"
 [dependencies]
 panic-halt  = "0.2"
 cortex-m-rt = "0.6.10"
-cortex-m    = "=0.5.8"
-heapless    = "0.4.0"
-nb          = "*"
-postcard    = "0.3.2"
+cortex-m    = "0.6.1"
+heapless    = "0.5.1"
+nb          = "0.1.2"
+postcard    = "0.4.2"
 
 
 [dependencies.dwm1001]
-version = "0.1.1"
+version = "0.3.0"
 features = ["dev", "rt"]
 
 [dependencies.protocol]
@@ -23,7 +23,3 @@ path = "../../protocol"
 [dependencies.serde]
 version = "1.0"
 default-features = false
-
-[patch.crates-io.dw1000]
-git = "https://github.com/braun-robotics/rust-dw1000"
-rev = "036dc67b3147417c49318b840f4d769f8045967e"

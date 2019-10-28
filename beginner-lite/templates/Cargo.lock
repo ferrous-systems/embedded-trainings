@@ -357,22 +357,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "segment-3"
-version = "0.1.0"
-dependencies = [
- "cortex-m 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "cortex-m-rt 0.6.10 (registry+https://github.com/rust-lang/crates.io-index)",
- "dwm1001 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "heapless 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "nb 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "panic-halt 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "postcard 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "protocol 0.1.0",
- "serde 1.0.102 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "segment-4"
+name = "segment-2"
 version = "0.1.0"
 dependencies = [
  "cortex-m 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",

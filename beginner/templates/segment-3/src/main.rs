@@ -21,7 +21,7 @@ use dwm1001::{
         Delay,
     },
     dw1000::{
-        mac,
+        mac::{self, PanId, ShortAddress},
     },
 
     DWM1001,
@@ -36,8 +36,7 @@ fn main() -> ! {
 
     let mut s: HString<heapless::consts::U1024> = HString::new();
 
-    let     clocks = board.CLOCK.constrain().freeze();
-    let mut delay  = Delay::new(board.SYST, clocks);
+    let mut delay  = Delay::new(board.SYST);
 
     board.DW_RST.reset_dw1000(&mut delay);
     let mut dw1000 = board.DW1000.init()
@@ -45,19 +44,17 @@ fn main() -> ! {
 
     // You'll need to set an address. Ask your instructor
     // for more details
-    let addr = mac::Address {
-        pan_id: 0x0386,
-        short_addr: 0,
-    };
+    let pan_id = PanId(0x0386);
+    let short_addr = ShortAddress(0);
 
     // Wait for the radio to become ready
     loop {
-        if dw1000.set_address(addr).is_err() {
+        if dw1000.set_address(pan_id, short_addr).is_err() {
             continue;
         }
 
         if let Ok(raddr) = dw1000.get_address() {
-            if addr == raddr {
+            if raddr == mac::Address::Short(pan_id, short_addr) {
                 break;
             }
         }

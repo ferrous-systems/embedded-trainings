@@ -1,8 +1,5 @@
 [workspace]
-
 members = [
     "segment-1",
     "segment-2",
-    "segment-3",
-    "segment-4",
 ]
