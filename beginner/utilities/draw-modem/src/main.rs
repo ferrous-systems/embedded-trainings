@@ -28,11 +28,12 @@ use dwm1001::{
     DW_RST,
     block_timeout,
     dw1000::{
-        macros::TimeoutError,
-        mac::Address,
+        mac::{Address, PanId, ShortAddress},
+        hl::RxConfig,
         Message,
     },
 };
+use embedded_timeout_macros::TimeoutError;
 use heapless::{String, consts::*};
 use rtfm::app;
 use postcard::{from_bytes, to_slice};
@@ -72,11 +73,11 @@ const APP: () = {
     static mut TIMER_1:     Timer<TIMER0>             = ();
     static mut TIMER_2:     Timer<TIMER1>             = ();
     static mut LOGGER:    ModemLogger = ();
-    static mut DW1000:    DW<
+    static mut DW1000:    Option<DW<
                             Spim<SPIM2>,
                             P0_17<Output<PushPull>>,
                             dw1000::Ready,
-                          > = ();
+                          >> = ();
     static mut DW_RST_PIN: DW_RST                   = ();
     static mut RANDOM:     Rng                      = ();
 
@@ -105,30 +106,24 @@ const APP: () = {
             pins.p0_20,
             pins.p0_18,
             pins.p0_17,
+            None,
         );
 
         let mut rst_pin = DW_RST::new(pins.p0_24.into_floating_input());
 
-        let clocks = device.CLOCK.constrain().freeze();
-
-        let mut delay = Delay::new(core.SYST, clocks);
+        let mut delay = Delay::new(core.SYST);
 
         rst_pin.reset_dw1000(&mut delay);
         let mut dw1000 = dw1000.init().unwrap();
 
-        let addr = Address {
-            pan_id:     MODEM_PAN,
-            short_addr: MODEM_ADDR,
-        };
-
         // Wait for the radio to become ready
         loop {
-            if dw1000.set_address(addr).is_err() {
+            if dw1000.set_address(MODEM_PAN, MODEM_ADDR).is_err() {
                 continue;
             }
 
             if let Ok(raddr) = dw1000.get_address() {
-                if addr == raddr {
+                if raddr == Address::Short(MODEM_PAN, MODEM_ADDR) {
                     break;
                 }
             }
@@ -136,7 +131,7 @@ const APP: () = {
 
         RANDOM = rng;
         DW_RST_PIN = rst_pin;
-        DW1000 = dw1000;
+        DW1000 = Some(dw1000);
         LOGGER = Logger::new(uarte0);
         TIMER_1 = timer_1;
         TIMER_2 = timer_2;
@@ -161,8 +156,10 @@ const APP: () = {
                 if resources.LOGGER.service_receive().unwrap() > 0 {
                     while let Some(msg) = resources.LOGGER.get_msg() {
                         if toggle {
+                            #[allow(deprecated)]
                             resources.LED_RED_1.set_low();
                         } else {
+                            #[allow(deprecated)]
                             resources.LED_RED_1.set_high();
                         }
                         toggle = !toggle;
@@ -176,18 +173,19 @@ const APP: () = {
                                 let msg_buf = to_slice(&msg, &mut buffer).unwrap();
 
                                 let mut tx = resources.DW1000
+                                    .take()
+                                    .expect("tx: dw1000 gone")
                                     .send(
                                         msg_buf,
-                                        Address {
-                                            pan_id:     0x0386,
-                                            short_addr: BROADCAST,
-                                        },
-                                        None
+                                        Address::Short(PanId(0x0386), ShortAddress::broadcast()),
+                                        None,
                                     )
                                     .expect("Failed to start send");
 
                                 block!(tx.wait())
                                     .expect("Failed to send data");
+
+                                *resources.DW1000 = Some(tx.finish_sending().expect("failed to finish tx"));
                             }
                             _ => {
                                 resources.LOGGER.error("Unexpected Cobs!").unwrap();
@@ -198,8 +196,8 @@ const APP: () = {
 
             }
 
-
-            let mut rx = if let Ok(rx) = resources.DW1000.receive() {
+            let dw1000 = resources.DW1000.take().expect("rx: dw1000 gone");
+            let mut rx = if let Ok(rx) = dw1000.receive(RxConfig::default()) {
                 rx
             } else {
                 resources.LOGGER.warn("Failed to start receive!").unwrap();
@@ -209,7 +207,9 @@ const APP: () = {
 
             resources.TIMER_1.start(RX_PERIOD_US);
 
-            match block_timeout!(&mut *resources.TIMER_1, rx.wait(&mut buffer)) {
+            let result = block_timeout!(&mut *resources.TIMER_1, rx.wait(&mut buffer));
+            *resources.DW1000 = Some(rx.finish_receiving().expect("failed to finish rx"));
+            match result {
                 Ok(message) => {
                     // Reset idle ctr
                     idle_ctr = 0;
@@ -221,7 +221,7 @@ const APP: () = {
                         resources.LOGGER.data(resp).unwrap();
                     } else {
                         strbuf.clear();
-                        write!(&mut strbuf, "^ Bad message from src 0x{:04X}", message.frame.header.source.short_addr).unwrap();
+                        write!(&mut strbuf, "^ Bad message from src {:?}", message.frame.header.source).unwrap();
                         resources.LOGGER.warn(strbuf.as_str()).unwrap();
                     }
                 },
@@ -251,27 +251,43 @@ const APP: () = {
     }
 };
 
-const MODEM_PAN: u16 = 0x0386;
-const MODEM_ADDR: u16 = 0x0808;
-const BROADCAST: u16 = 0xFFFF;
+const MODEM_PAN: PanId = PanId(0x0386);
+const MODEM_ADDR: ShortAddress = ShortAddress(0x0808);
+const BROADCAST: PanId = PanId(0xffff);
 
 fn process_message(logger: &mut ModemLogger, msg: &Message) -> Result<ModemUartMessages, ()> {
-    if msg.frame.header.source.pan_id == BROADCAST {
+    let (src_pan, src_addr) = match msg.frame.header.source {
+        Address::Short(pan, addr) => (pan, addr),
+        _ => {
+            logger.error("bad src addr!").unwrap();
+            return Err(())
+        }
+    };
+
+    let (dst_pan, dst_addr) = match msg.frame.header.destination {
+        Address::Short(pan, addr) => (pan, addr),
+        _ => {
+            logger.error("bad dest addr!").unwrap();
+            return Err(())
+        }
+    };
+
+    if src_pan == BROADCAST {
         logger.error("bad bdcst pan!").unwrap();
         return Err(())
     }
 
-    if msg.frame.header.source.short_addr == BROADCAST {
+    if src_addr == ShortAddress::broadcast() {
         logger.error("bad bdcst addr!").unwrap();
         return Err(())
     }
 
-    if msg.frame.header.destination.pan_id != msg.frame.header.source.pan_id {
+    if dst_pan != src_pan {
         logger.error("mismatch pan!").unwrap();
         return Err(())
     }
 
-    if msg.frame.header.destination.short_addr != MODEM_ADDR {
+    if msg.frame.header.destination != Address::Short(MODEM_PAN, MODEM_ADDR) {
         logger.error("that ain't me").unwrap();
         return Err(())
     }
@@ -280,9 +296,9 @@ fn process_message(logger: &mut ModemLogger, msg: &Message) -> Result<ModemUartM
         match pmsg {
             RadioMessages::SetCell(sc) => {
                 return Ok(ModemUartMessages::SetCell(CellCommand {
-                    source: msg.frame.header.source.short_addr,
-                    dest: msg.frame.header.destination.short_addr,
-                    cell: sc
+                    source: src_addr.0,
+                    dest: dst_addr.0,
+                    cell: sc,
                 }));
             }
             RadioMessages::StartTurn(_) => {

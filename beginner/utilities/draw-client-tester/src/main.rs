@@ -6,13 +6,11 @@
 use panic_halt;
 
 // String formatting
-use core::fmt::Write;
-use heapless::String as HString;
-
 use nb::block;
 
 use protocol::{RadioMessages, Cell};
 use postcard::{to_slice, from_bytes};
+use embedded_timeout_macros::TimeoutError;
 
 // Used to set the program entry point
 use cortex_m_rt::entry;
@@ -22,17 +20,10 @@ use dwm1001::{
     nrf52832_hal::{
         prelude::*,
         Delay,
-        Uarte,
-        nrf52832_pac::{
-            UARTE0,
-        },
     },
     dw1000::{
-        hl::{
-            Message,
-        },
-        mac,
-        macros::TimeoutError,
+        hl::RxConfig,
+        mac::{self, PanId, ShortAddress},
     },
 
     DWM1001,
@@ -50,28 +41,23 @@ fn main() -> ! {
     let mut timer = board.TIMER0.constrain();
     let mut rng   = board.RNG.constrain();
 
-    let mut s: HString<heapless::consts::U1024> = HString::new();
-
-    let     clocks = board.CLOCK.constrain().freeze();
-    let mut delay  = Delay::new(board.SYST, clocks);
+    let mut delay  = Delay::new(board.SYST);
 
     board.DW_RST.reset_dw1000(&mut delay);
     let mut dw1000 = board.DW1000.init()
         .expect("Failed to initialize DW1000");
 
-    let addr = mac::Address {
-        pan_id: 0x0386,
-        short_addr: rng.random_u16() % 16 + 1,
-    };
+    let pan_id = PanId(0x0386);
+    let short_addr = ShortAddress(rng.random_u16() % 16 + 1);
 
     // Wait for the radio to become ready
     loop {
-        if dw1000.set_address(addr).is_err() {
+        if dw1000.set_address(pan_id, short_addr).is_err() {
             continue;
         }
 
         if let Ok(raddr) = dw1000.get_address() {
-            if addr == raddr {
+            if raddr == mac::Address::Short(pan_id, short_addr) {
                 break;
             }
         }
@@ -84,6 +70,8 @@ fn main() -> ! {
 
     let mut x = 1;
     let mut y = 1;
+
+    let mut dw1000_opt = Some(dw1000);
 
     loop {
         let jitter = (NOMINAL_INTERVAL_US - JITTER_US) + (rng.random_u32() % (JITTER_US * 2));
@@ -110,13 +98,15 @@ fn main() -> ! {
 
         let msg_buf = to_slice(&msg, &mut tx_buf).unwrap();
 
-        let mut tx = dw1000
+        let addr = mac::Address::Short(
+            PanId(0x0386),
+            ShortAddress(0x0808),
+        );
+        let mut tx = dw1000_opt.take()
+            .expect("dw1000 not there")
             .send(
                 msg_buf,
-                mac::Address {
-                    pan_id:     0x0386, // 0x0386,
-                    short_addr: 0x0808, // 0x0001,
-                },
+                addr,
                 None
             )
             .expect("Failed to start receiver");
@@ -125,6 +115,8 @@ fn main() -> ! {
 
         block!(tx.wait())
             .expect("Failed to send data");
+
+        let dw1000 = tx.finish_sending().expect("failed to finish sending");
 
         toggle += 1;
 
@@ -136,14 +128,16 @@ fn main() -> ! {
         }
 
 
-        let mut rx = if let Ok(rx) = dw1000.receive() {
+        let mut rx = if let Ok(rx) = dw1000.receive(RxConfig::default()) {
             rx
         } else {
             while timer.wait().is_err() {}
             continue;
         };
 
-        match block_timeout!(&mut timer, rx.wait(&mut rx_buf)) {
+        let result = block_timeout!(&mut timer, rx.wait(&mut rx_buf));
+        let mut dw1000 = rx.finish_receiving().expect("finish_receiving failed");
+        match result {
             Ok(message) => {
                 if let Ok(pmsg) = from_bytes::<RadioMessages>(message.frame.payload) {
                     if let RadioMessages::StartTurn(addr) = pmsg {
@@ -155,19 +149,17 @@ fn main() -> ! {
                         }
                         toggle2 = !toggle2;
 
-                        let mac_addr = mac::Address {
-                            pan_id: 0x0386,
-                            short_addr: addr,
-                        };
+                        let pan_id = PanId(0x0386);
+                        let short_addr = ShortAddress(addr);
 
                         // I am become turn
                         'addr: loop {
-                            if dw1000.set_address(mac_addr).is_err() {
+                            if dw1000.set_address(pan_id, short_addr).is_err() {
                                 continue 'addr;
                             }
 
                             if let Ok(raddr) = dw1000.get_address() {
-                                if mac_addr == raddr {
+                                if raddr == mac::Address::Short(pan_id, short_addr) {
                                     break 'addr;
                                 }
                             }
@@ -176,8 +168,9 @@ fn main() -> ! {
                 }
             },
             Err(TimeoutError::Timeout) => { }
-            Err(TimeoutError::Other(error)) => { }
+            Err(TimeoutError::Other(_)) => { }
         };
 
+        dw1000_opt = Some(dw1000);
     }
 }
