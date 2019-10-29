@@ -29,3 +29,4 @@ jobs:
         target: thumbv7em-none-eabihf
     - name: Build
       run: ./ci/run.sh
+      shell: bash
