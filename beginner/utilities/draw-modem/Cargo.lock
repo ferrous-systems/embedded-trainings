@@ -124,7 +124,7 @@ dependencies = [
  "embedded-timeout-macros 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "heapless 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "nb 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "nrf52-bin-logger 0.3.0 (git+https://github.com/jonas-schievink/nrf52-bin-logger.git?rev=fb52736)",
+ "nrf52-bin-logger 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "nrf52832-pac 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "panic-ramdump 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "postcard 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -270,8 +270,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "nrf52-bin-logger"
-version = "0.3.0"
-source = "git+https://github.com/jonas-schievink/nrf52-bin-logger.git?rev=fb52736#fb527366c9e774c8ba11b25e0fd192dbef4bf181"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "bare-metal 0.2.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "cortex-m 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -591,7 +591,7 @@ dependencies = [
 "checksum heapless 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)" = "f339aa7d51777fc0af6aa7cbeb277dfc6e6c029cbdeda48d0fbb92c2337f0e69"
 "checksum ieee802154 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "af632b4000a49093d3612d43529b9847a45690168dbe1f0877b8535e0670d281"
 "checksum nb 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)" = "b1411551beb3c11dedfb0a90a0fa256b47d28b9ec2cdff34c25a2fa59e45dbdc"
-"checksum nrf52-bin-logger 0.3.0 (git+https://github.com/jonas-schievink/nrf52-bin-logger.git?rev=fb52736)" = "<none>"
+"checksum nrf52-bin-logger 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "62d9fd2ea73ad63605287f95a60b2ab4fc7e0befe52be62df5516b2271669f7c"
 "checksum nrf52-hal-common 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)" = "03dcdf72cd52a1c4829905e08a90ad6f4dc0f9d15ecf1883cc74f098199aa873"
 "checksum nrf52832-hal 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)" = "dd4803f1d08e6a4c8726ae68b40cecf7c2ab05f49b1ce29af932d052cb61114c"
 "checksum nrf52832-pac 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)" = "3c4545414415bddd872f13c0a5418ecc380e34347a52cb048cfed38c1b0957fa"
