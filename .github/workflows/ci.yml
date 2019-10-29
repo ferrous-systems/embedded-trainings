@@ -26,5 +26,6 @@ jobs:
       with:
         toolchain: ${{ matrix.rust }}
         override: true
+        target: thumbv7em-none-eabihf
     - name: Build
       run: ./ci/run.sh
