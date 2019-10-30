@@ -32,7 +32,7 @@ fn main() -> ! {
     loop {
         s.clear();
         write!(&mut s, "Blink!\r\n").unwrap();
-        board.uart.write(s.as_bytes()).unwrap();
+        board.uart.write(s.into_bytes()).unwrap();
 
         // board.leds.D9  - Top LED GREEN
         // board.leds.D12 - Top LED RED
