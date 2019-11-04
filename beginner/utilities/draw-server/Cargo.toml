@@ -1,29 +1,30 @@
 [package]
-name = "serial-client"
+name = "draw-server"
 version = "0.1.0"
 authors = ["James Munns <james.munns@ferrous-systems.com>"]
 edition = "2018"
 
 [dependencies]
-serialport = "3.2.0"
+serialport = "3.3.0"
 cobs       = "0.1.4"
 chrono     = "0.4"
 reqwest    = "0.9"
-rand       = "0.6"
+rand       = "0.7.2"
 ron        = "0.5"
 
 [dependencies.postcard]
-version = "0.3.2"
+version = "0.4.2"
 features = ["use-std"]
 
 [dependencies.nrf52-bin-logger]
-version = "0.3.0"
+git = "https://github.com/jonas-schievink/nrf52-bin-logger.git"
+rev = "fb52736"
 # This was a mistake
 features = ["xxAA"]
 
 [dependencies.serde]
 version = "1.0"
-default-features = false
+#default-features = false
 features = ["derive"]
 
 [dependencies.protocol]

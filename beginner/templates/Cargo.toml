@@ -5,7 +5,3 @@ members = [
     "segment-3",
     "segment-4",
 ]
-
-[patch.crates-io.dw1000]
-git = "https://github.com/braun-robotics/rust-dw1000"
-rev = "036dc67b3147417c49318b840f4d769f8045967e"

@@ -28,7 +28,7 @@ use dwm1001::{
         gpio::Level,
     },
     dw1000::{
-        mac,
+        mac::{self, PanId, ShortAddress},
     },
     Led,
     Leds,
@@ -58,8 +58,7 @@ fn main() -> ! {
 
     // Setup timer utilities
     let mut timer  = peripherals.TIMER0.constrain();
-    let     clocks = peripherals.CLOCK.constrain().freeze();
-    let mut delay  = Delay::new(core_peripherals.SYST, clocks);
+    let mut delay  = Delay::new(core_peripherals.SYST);
 
     // Create and initialize the dwm1001 radio
     dw_rst.reset_dw1000(&mut delay);
@@ -69,6 +68,7 @@ fn main() -> ! {
         pins.p0_20,
         pins.p0_18,
         pins.p0_17,
+        None,
     );
 
     let mut dw1000 = ununit_dw1000
@@ -77,10 +77,8 @@ fn main() -> ! {
 
     // You'll need to set an address. Ask your instructor
     // for more details
-    let addr = mac::Address {
-        pan_id: 0x0386,
-        short_addr: 0,
-    };
+    let pan_id = PanId(0x0386);
+    let short_addr = ShortAddress(0);
 
     // This is the UARTE you will be building a driver for
     let mut _uarte = uarte::Uarte::new(
@@ -97,12 +95,12 @@ fn main() -> ! {
 
     // Wait for the radio to become ready
     loop {
-        if dw1000.set_address(addr).is_err() {
+        if dw1000.set_address(pan_id, short_addr).is_err() {
             continue;
         }
 
         if let Ok(raddr) = dw1000.get_address() {
-            if addr == raddr {
+            if raddr == mac::Address::Short(pan_id, short_addr) {
                 break;
             }
         }

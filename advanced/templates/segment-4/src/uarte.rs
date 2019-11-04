@@ -52,6 +52,7 @@ impl<T> Uarte<T> where T: UarteExt {
             let w = unsafe { w.pin().bits(pins.rxd.pin) };
             w.connect().connected()
         });
+        #[allow(deprecated)]
         pins.txd.set_high();
         uarte.psel.txd.write(|w| {
             let w = unsafe { w.pin().bits(pins.txd.pin) };

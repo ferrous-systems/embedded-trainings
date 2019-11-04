@@ -17,7 +17,7 @@ use cortex_m_rt::entry;
 
 // Provides definitions for our development board
 use dwm1001::{
-    dw1000::mac,
+    dw1000::mac::{self, PanId, ShortAddress},
     embedded_hal::timer::CountDown,
     nrf52832_hal::{prelude::*, rng::Rng, Delay},
     DWM1001,
@@ -27,13 +27,13 @@ use protocol::{Cell, RadioMessages};
 
 // These addresses probably don't need to be changed
 // for the class
-const SOURCE_PAN_ID: u16 = 0x0386;
-const SOURCE_ADDRESS: u16 = 0xABCD;
-const DESTINATION_PAN_ID: u16 = 0x0386;
+const SOURCE_PAN_ID: PanId = PanId(0x0386);
+const SOURCE_ADDRESS: ShortAddress = ShortAddress(0xABCD);
+const DESTINATION_PAN_ID: PanId = PanId(0x0386);
 
 // Heads up! Your instructor will give you a new Source Address to use
 // for the class. Make sure you update it!
-const DESTINATION_ADDRESS: u16 = 0x0808;
+const DESTINATION_ADDRESS: ShortAddress = ShortAddress(0x0808);
 
 #[entry]
 fn main() -> ! {
@@ -41,26 +41,19 @@ fn main() -> ! {
     let mut timer = board.TIMER0.constrain();
     let mut rng = board.RNG.constrain();
 
-    let clocks = board.CLOCK.constrain().freeze();
-    let mut delay = Delay::new(board.SYST, clocks);
+    let mut delay = Delay::new(board.SYST);
 
     board.DW_RST.reset_dw1000(&mut delay);
     let mut dw1000 = board.DW1000.init().expect("Failed to initialize DW1000");
 
-    let source_address = mac::Address {
-        pan_id: SOURCE_PAN_ID,
-        short_addr: SOURCE_ADDRESS,
-    };
-    let destination_address = mac::Address {
-        pan_id: DESTINATION_PAN_ID,
-        short_addr: DESTINATION_ADDRESS,
-    };
+    let source_address = mac::Address::Short(SOURCE_PAN_ID, SOURCE_ADDRESS);
+    let destination_address = mac::Address::Short(DESTINATION_PAN_ID, DESTINATION_ADDRESS);
 
     // Before we can send a message, we need to initialize our source
     // address. We should set our address, and confirm that the address
     // reported by the radio matches the one we set.
     loop {
-        if dw1000.set_address(source_address).is_err() {
+        if dw1000.set_address(SOURCE_PAN_ID, SOURCE_ADDRESS).is_err() {
             continue;
         }
 
