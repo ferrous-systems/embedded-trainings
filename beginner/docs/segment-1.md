@@ -30,9 +30,11 @@ This command should complete successfully. If you see an error, please make sure
 
 Your instructor will explain the components of this project, including:
 
-* `.cargo/config` - Configuration settings for Cargo, the Rust build tool
+* `.cargo/config` - Configuration settings for Cargo, the Rust build tool\*
 * `Cargo.toml` - the project/package configuration file
 * `src/main.rs` - the code for this project
+
+(\* depending on your computer's operating system the `.cargo` directory might not be visible in the file browser or IDE. If this is indeed the case, then a web search for "how to show hidden files in <NAME_OF_YOUR_OPERATING_SYSTEM>" should steer you in the right direction, or just ask your instructor for assistance.)
 
 ## Part 2: Getting the Documentation
 
