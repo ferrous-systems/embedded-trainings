@@ -89,13 +89,11 @@ Once you have run `cargo run`, you will be placed in a debugging session of `gdb
 
 The example code blinks a single LED at a fixed rate. Try blinking other LEDs on the board, and changing the interval at which the LEDs blink.
 
-
 ## Part 6: Random Patterns (optional)
 
 You can also look at the documentation for this board, and use the random number generator to pick a random pattern after each pattern completes.
 
 You can look at the documentation of the `dwm1001` crate, and the re-exported components of the `nrf52832-hal` crate to review the documentation for the `rng` module.
-
 
 ## Part 7: Building a Pattern (optional)
 

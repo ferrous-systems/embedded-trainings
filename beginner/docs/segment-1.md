@@ -71,7 +71,6 @@ Back in your main terminal window, you can now run your application. For this, w
 cargo run
 ```
 
-
 ## Part 4: Debugging code
 
 Once you have run `cargo run`, you will be placed in a debugging session of `gdb`. From here, you can run a number of commands. Some useful commands include:
