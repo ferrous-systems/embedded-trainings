@@ -39,7 +39,7 @@ The DWM1001-DEV board does not use Hardware Flow Control, and has no parity. It 
 * RXD: `P0.11`
 * TXD: `P0.05`
 
-## Step Two: Sending a fixed number of bytes
+## Step 2: Sending a fixed number of bytes
 
 Sending bytes requires a couple of steps. These steps include:
 
@@ -51,7 +51,7 @@ Sending bytes requires a couple of steps. These steps include:
 
 **IMPORTANT NOTE**: As the DMA is changing memory outside of the view of the compiler, it is important to use `compiler_fence()`s to tell the compiler not to over-optimize here. This should be done before the transaction has started, and after the transaction has completed.
 
-## Step Three: Receive a fixed number of bytes
+## Step 3: Receive a fixed number of bytes
 
 Receiving bytes requires a couple of steps. These steps include:
 
@@ -63,10 +63,10 @@ Receiving bytes requires a couple of steps. These steps include:
 
 As before, be sure to include `compiler_fence()`s to make sure the compiler does not over-optimize here.
 
-## Step Four: Receive with timeout
+## Step 4: Receive with timeout
 
 This step is similar to step three, however you will need to use a timer to allow for a maximum time to receive.
 
-## Step Five: Stretch Goals
+## Step 5: Stretch Goals
 
 As a stretch goal, students may begin sending binary serialized and encoded data over the interface, and may begin controlling their radio operation via the serial interface.

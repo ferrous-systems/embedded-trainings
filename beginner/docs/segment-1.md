@@ -30,9 +30,11 @@ This command should complete successfully. If you see an error, please make sure
 
 Your instructor will explain the components of this project, including:
 
-* `.cargo/config` - Configuration settings for Cargo, the Rust build tool
+* `.cargo/config` - Configuration settings for Cargo, the Rust build tool\*
 * `Cargo.toml` - the project/package configuration file
 * `src/main.rs` - the code for this project
+
+(\* depending on your computer's operating system the `.cargo` directory might not be visible in the file browser or IDE. If this is indeed the case, then a web search for "how to show hidden files in <NAME_OF_YOUR_OPERATING_SYSTEM>" should steer you in the right direction, or just ask your instructor for assistance.)
 
 ## Part 2: Getting the Documentation
 
@@ -69,14 +71,13 @@ Back in your main terminal window, you can now run your application. For this, w
 cargo run
 ```
 
-
 ## Part 4: Debugging code
 
 Once you have run `cargo run`, you will be placed in a debugging session of `gdb`. From here, you can run a number of commands. Some useful commands include:
 
-* `c` or `continue`: Begin execution of your program
+* `c` or `continue`: Continue (or begin) execution of your program up to the next breakpoint
 * `n` or `next`: Execute the next line of your program
-* `s` or `step`: Execute the next line, if the next line includes a call to another function, step into that code
+* `s` or `step`: Execute the next line. If the next line includes a call to another function, step into that code
 * `b $location` or `break $location`: Set a breakpoint at a place in your code. The value of `$location` can include:
     * `b 123` - Break on line 123 of the currently displayed file
     * `b main.rs:123` - Break on line 123 of the `main.rs`
